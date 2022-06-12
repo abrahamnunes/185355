@@ -156,9 +156,9 @@ INITIAL {
     nf = nfinf
     ns = nsinf
 	
-	VERBATIM
-	return 0;
-	ENDVERBATIM
+	:VERBATIM
+	:return 0;
+	:ENDVERBATIM
 }
 
 : discreticed versions of the differential equations, hence a PROCEDURE and not DERIVATIVE block

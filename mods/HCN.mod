@@ -110,9 +110,9 @@ INITIAL {
         hys = hysinf
 	hyhtf = hyhtfinf
 	hyhts = hyhtsinf
-	VERBATIM
-	return 0;
-	ENDVERBATIM
+	:VERBATIM 
+	:return 0;
+	:ENDVERBATIM
 }
 
 PROCEDURE states() {	:Computes state variables m, h, and n 
