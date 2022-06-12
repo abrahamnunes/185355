@@ -13,7 +13,7 @@ mkdir figures/fi-curves
 
 # Run DG Model 
 nrnivmodl mods
-nrniv main.hoc
+x86_64/special main.hoc
 
 # Plot Network Structure
 
