@@ -1,3 +1,6 @@
+// Hyperparameters 
+N_RUNS = 10 // Number of runs per group
+
 // Load cell templates and network 
 err_ = load_file("objects/GC.hoc")
 err_ = load_file("objects/BC.hoc")
@@ -10,8 +13,8 @@ err_ = load_file("objects/DentateGyrus.hoc")
 objref hc, lr, nr
 strdef hclab, lrlab, nrlab 
 
-// Do 10 Runs for each network setting
-for random_state = 1, 10 {
+// Do N_RUNS Runs for each network setting
+for random_state = 1, N_RUNS {
     sprint(hclab, "%s-%d", "HC", random_state)
     sprint(lrlab, "%s-%d", "LR", random_state)
     sprint(nrlab, "%s-%d", "NR", random_state)

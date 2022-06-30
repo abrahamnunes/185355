@@ -155,10 +155,6 @@ INITIAL {
 	h = hinf
     nf = nfinf
     ns = nsinf
-	
-	:VERBATIM
-	:return 0;
-	:ENDVERBATIM
 }
 
 : discreticed versions of the differential equations, hence a PROCEDURE and not DERIVATIVE block
@@ -168,9 +164,6 @@ PROCEDURE states() {	: Computes state variables m, h, and n
         h = h + hexp*(hinf-h)
         nf = nf + nfexp*(nfinf-nf)
         ns = ns + nsexp*(nsinf-ns)
-        VERBATIM
-        return 0;
-        ENDVERBATIM
 }
 
 : moved this to assign block <ah> 

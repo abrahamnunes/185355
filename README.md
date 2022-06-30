@@ -59,3 +59,4 @@ Here we do not list all specific changes implemented, but rather a high-level ov
 	- Attempting to maximize local scope for variables, rather than allowing for global definitions 
 3. Development of functions to "transform" network in order to test different effects
 4. Analysis code written in Julia  
+5. Added capability for spontaneous action potential discharge of granule cells 

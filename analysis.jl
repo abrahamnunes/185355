@@ -22,9 +22,9 @@ populations = Dict(
     "HIPP" => [521, 527]
 )
 
-for run ∈ 1:n_runs
+for run_ ∈ 1:n_runs
     for i ∈ 1:length(labels)
-        spikes = load_spike_files(patterns, labels[i]*"-$run", populations)
+        spikes = load_spike_files(patterns, labels[i]*"-$run_", populations)
 
         # CREATE RASTER PLOTS
         for p ∈ unique(spikes.Pattern)
@@ -34,12 +34,10 @@ for run ∈ 1:n_runs
             for pop ∈ keys(populations)
                 lb, ub = populations[pop]
                 popspikes = spikes[(spikes.Population .== pop) .& (spikes.Pattern .== p),:]
-                #if size(popspikes,1) > 0
                 append!(plots, [raster_plot(popspikes; xlab="", ylab=pop)])
-                #end
             end
             fig = plot(reverse(plots)..., layout=grid(5, 1, heights=[0.15, 0.15, 0.15, 0.4, 0.15]), size=(400, 500))
-            savefig(fig, "figures/raster-plots/raster-"*string(p)*"-"*labels[i]*"-$run"*fig_ext)
+            savefig(fig, "figures/raster-plots/raster-"*string(p)*"-"*labels[i]*"-$run_"*fig_ext)
         end
     end 
 end 
@@ -74,7 +72,11 @@ for i ∈ 1:length(labels)
             psse = std(psc[labels[i]])/sqrt(n_runs)
             pslci = round(psm - 1.96*psse, digits=2)
             psuci = round(psm + 1.96*psse, digits=2)
-            psc_label = labels[i]*" (PS="*string(psm)*" ["*string(pslci)*", "*string(psuci)*"])"
+            if n_runs > 1
+                psc_label = labels[i]*" (PS="*string(psm)*" ["*string(pslci)*", "*string(psuci)*"])"
+            else 
+                psc_label = labels[i]*" (PS="*string(psm)
+            end
         else
             psc_label = nothing
         end

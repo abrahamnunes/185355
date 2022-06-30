@@ -181,4 +181,5 @@ class IClamp(object):
             'rate': len(sim.allSimData['spkt']) / (self.duration / 1000),
             'i': sim.allSimData['iclamp']['cell_0']
         }
+
         return results

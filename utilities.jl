@@ -203,6 +203,6 @@ function raster_plot(
     p = plot(xlab=xlab, ylab=ylab, xlims=xlims, yticks=false)
     p = scatter!(spikes[:,1], spikes[:,2], markershape=:vline, 
                 label=nothing, c=:black, msc=:black, msa=1, ma=1, 
-                 markerstrokewidth=100000)
+                 markerstrokewidth=1)
     return p
 end

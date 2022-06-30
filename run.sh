@@ -1,3 +1,6 @@
+# Clean up anything from previous runs
+sh cleanup.sh
+
 # Make directory structure for outputs
 mkdir data
 mkdir data/dgnetwork 

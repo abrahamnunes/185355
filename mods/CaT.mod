@@ -73,9 +73,6 @@ PROCEDURE states() {	:Computes state variables a and b
         trates(v)	:      at the current v and dt.
 	a = a + aexp*(ainf-a) : i.e. a_{t+1} = a_t*exp(-dt/atau)+ainf*(1-exp(-dt/atau)); da/dt = 1/atau*(ainf-a)
 	b = b + bexp*(binf-b)
-        VERBATIM
-        return 0;
-        ENDVERBATIM
 }
  
 LOCAL q10

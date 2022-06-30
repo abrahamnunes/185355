@@ -50,6 +50,9 @@ begintemplate DentateGyrus
     objref rdhc2gc, rdhc2bc, rdhc2mc
     objref rnd_pp2gc, rnd_pp2bc, rnd_pp2hc
     objref rdsynb, rdsyna 
+    objref rdsa
+    
+    // Declare cvode
     objref cvode
 
     // Data management related declarations 
@@ -61,7 +64,7 @@ begintemplate DentateGyrus
     objref efile            // Membrane potential storage file
 
     // Declarations related to debugging 
-    objref vec_stim[100], vec_stim_noise[100]
+    objref vec_stim[100], vec_stim_noise[500]
     objref distri_gc_input_
 
     // Network related declarations
@@ -72,9 +75,9 @@ begintemplate DentateGyrus
     public scale_BC2GC_strength
     public cells, nclist
     objref cells , Gcell[500], Bcell[6], Mcell[15], Hcell[6]
-    objref PPSt[100], PPSt_noise[100]
-    objref rs, rslist, rs_noiselist, pp_start
-    objref nclist, netcon, netcon_d[100]
+    objref PPSt[100], PPSt_noise[500]
+    objref rs, rs_noise, rslist, rs_noiselist, pp_start, pp_noise_start
+    objref nclist, netcon, netcon_d[100], netcon_d_noise[500]
     objref vgc2gc, vgc2bc, vgc2mc, vgc2hc
     objref vbc2gc, vbc2bc, vbc2mc
     objref vmc2gc, vmc2bc, vmc2mc, vmc2hc
@@ -131,12 +134,16 @@ begintemplate DentateGyrus
         Arguments: 
             $1 : int :  Global RNG seed
         */
+        n_patterns = 12     // number of patterns to simulate (should be 12 for the full sim)
         dt = 0.1            // simulation time step [ms]
         tstop = 200         // total simulation time [ms]
         trial = $1          // trialnumber = seed of simulation [ GENERALIZE ]
         trial_noise = 1     // seed for noise to PP
         rseed  = $1         // pseudorandom number generator seed
         debug_ = 2
+
+        spontaneous_activity_ = 1 // whether the GC neuron is spontaneously active
+        test_sa = 0               // 1 if we are testing spontaneous GC activity (cuts all inputs to GCs)
 
     }
 
@@ -201,6 +208,10 @@ begintemplate DentateGyrus
         rdsynb = new Random(rseed)
         rdsyna.discunif(0, 1)
         rdsynb.discunif(0, 3)
+
+        // RNG for spontaneous activity 
+        rdsa = new Random(rseed)
+        rdsa.discunif(0, ngcell-1)
     }
 
     proc set_data_management_params(){
@@ -217,8 +228,7 @@ begintemplate DentateGyrus
         print_template 	= 1             // write out spike sequence into template file
         print_GC_sprouting_input_ = 0	// calculates and print out GC sprouting input number distribution
         print_stim_ 	 = 1             // print stimulus to GCs for debug purpose..
-        print_stim_noise = 1            // print noise to GCs for debug purpose.. (same output file as Poisson input to GCs!)
-
+        print_stim_noise = 1            // print noise to GCs for debug purpose.. 
     }
 
     proc set_neuron_population_params(){
@@ -235,7 +245,7 @@ begintemplate DentateGyrus
         nmcell_per_lamella = 3  // Number of mossy cells per lamella
 
         // Add 2*npp because of PP input and PP noise...
-        ntotal = ngcell + nbcell + nmcell + nhcell + npp + npp
+        ntotal = ngcell + nbcell + nmcell + nhcell + npp + ngcell
 
         // Neuronal params 
         v_init = -77.71
@@ -266,18 +276,19 @@ begintemplate DentateGyrus
         Arguments: 
 
         */
-        p_sprouted_ = 0     // proportion of other GCs to which a GC will connect 
-        scale_gpas_dg_       = 1      // scaling [%/100] of gpas of th GC model
-        scale_sk_dg_         = 1      // scaling of Ca-dependent K (SK) of th GC model
-        scale_kir_           = 1      // scaling of KIR conductance in GC model
-        scale_gabaa_         = 1      // scaling of GABAA in GC model
-        scale_PP_strength    = 0.1    // scaling of synaptic weight of PP
-        scale_PP2BC_strength = 1      // scaling of synaptic weight PP->BC (100% for original value which was 50% of PP->GC strength..)
-        scale_PP2HC_strength = 0      // scaling of synaptic weight PP->HIPP (set to 0% for Santhakumar because there no PP->HIPP connections...)
-        scale_HC2GC_strength = 1      // scaling of synaptic weight HC->GC (beta_HIPP in Myers and Scharfman, 2009)
-        scale_MC2GC_strength = 1      // scaling of synaptic weight MC->GC (beta_HIPP in Myers and Scharfman, 2009)
-        scale_GC2BC_strength = 3      // scaling of synaptic weight GC->BC
-        scale_BC2GC_strength = 3      // scaling of synaptic weight BC->GC
+        p_sprouted_                     = 0                 // proportion of other GCs to which a GC will connect 
+        scale_gpas_dg_                  = 1                 // scaling [%/100] of gpas of th GC model
+        scale_sk_dg_                    = 1                 // scaling of Ca-dependent K (SK) of th GC model
+        scale_kir_                      = 1                 // scaling of KIR conductance in GC model
+        scale_gabaa_                    = 1                 // scaling of GABAA in GC model
+        scale_PP_strength               = 0.1*(1-test_sa)   // scaling of synaptic weight of PP
+        scale_PP2BC_strength            = 1*(1-test_sa)     // scaling of synaptic weight PP->BC (100% for original value which was 50% of PP->GC strength..)
+        scale_PP2HC_strength            = 0                 // scaling of synaptic weight PP->HIPP (set to 0% because there are no PP->HIPP connections...)
+        scale_HC2GC_strength            = 1*(1-test_sa)     // scaling of synaptic weight HC->GC (beta_HIPP in Myers and Scharfman, 2009)
+        scale_MC2GC_strength            = 1*(1-test_sa)     // scaling of synaptic weight MC->GC (beta_HIPP in Myers and Scharfman, 2009)
+        scale_GC2BC_strength            = 3*(1-test_sa)     // scaling of synaptic weight GC->BC
+        scale_BC2GC_strength            = 3*(1-test_sa)     // scaling of synaptic weight BC->GC
+        spontaneous_activity_strength   = 100               // scaling of the strength of synaptic weight for the spontaneous AP generators
 
     }
 
@@ -348,6 +359,7 @@ begintemplate DentateGyrus
             scale_sk_dg_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
+            spontaneous_activity_rate = 0.25     // In Hz
         }
 
         // Lithium Responders 
@@ -362,6 +374,7 @@ begintemplate DentateGyrus
             scale_sk_dg_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
+            spontaneous_activity_rate = 1   // In Hz
         }
 
         // Lithium Nonresponders 
@@ -376,6 +389,7 @@ begintemplate DentateGyrus
             scale_sk_dg_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
+            spontaneous_activity_rate = 0.25    // In Hz
         }
     }
 
@@ -385,7 +399,7 @@ begintemplate DentateGyrus
     proc make_cells() {local i
         // Need to re-declare cell arrays with proper sizes
         objref Gcell[ngcell], Bcell[nbcell], Mcell[nmcell], Hcell[nhcell]
-        objref PPSt[npp], PPSt_noise[npp]
+        objref PPSt[npp], PPSt_noise[ngcell]
         cells = new List()
 
         // Create populations 
@@ -394,7 +408,10 @@ begintemplate DentateGyrus
         for i=0, nmcell-1 {Mcell[i] = new MossyCell(i)}
         for i=0, nhcell-1 {Hcell[i] = new HIPPCell(i)}
         for i=0, npp-1 	  {PPSt[i] = new PPstim(i, PP_rate_, tstop, PP_box_start_, PP_box_stop_)}
-        for i=0, npp-1    {PPSt_noise[i] = new PPstim(i, PP_rate_, tstop, PP_box_start_, PP_box_stop_)}
+        
+	    // [TESTING] Adding individual stims to each cell in order to simulate spontaneous activity
+	    //for i=0, npp-1    {PPSt_noise[i] = new PPstim(i, PP_rate_, tstop, PP_box_start_, PP_box_stop_)}
+        for i=0, ngcell-1    { PPSt_noise[i] = new PPstim(i, PP_rate_, tstop, 1., tstop-1) }
 
         // Append to cells list
         for i = 0, ngcell-1 {cells.append(Gcell[i])} 	// cells 0-499 GCs
@@ -402,7 +419,12 @@ begintemplate DentateGyrus
         for i = 0, nmcell-1 {cells.append(Mcell[i])} 	// cells 506-520 MC
         for i = 0, nhcell-1 {cells.append(Hcell[i])} 	// cells 521-526 HC
         for i = 0, npp-1 {cells.append(PPSt[i])}		// 527 - xxx PP artificial cell
-        for i = 0, npp-1 {cells.append(PPSt_noise[i])}  
+	    
+        // [TESTING] Append GC spontaneous activity generators to list
+        //for i = 0, npp-1 {cells.append(PPSt_noise[i])}
+        if (spontaneous_activity_ == 1) {  
+            for i = 0, ngcell-1 { cells.append(PPSt_noise[i]) }
+        }  
     }
 
     proc make_input_stimulation() { local i
@@ -410,8 +432,9 @@ begintemplate DentateGyrus
         */
         // Print update to console
         print "\tDefining Random Generator for each PPStim object."   
-        objref pp_start
+        objref pp_start, pp_noise_start
         objref netcon_d[npp]
+	    objref netcon_d_noise[ngcell]
 
 
         rslist = new List()
@@ -423,13 +446,6 @@ begintemplate DentateGyrus
             rs = new RandomStream(i, random_state)
             rslist.append(rs)
             PPSt[i].pp.noiseFromRandom(rs.r)
-            rs.r.uniform(0,1)
-            rs.start(random_state)
-        }
-        for i=0, npp-1 {
-            rs = new RandomStream(i+npp, random_state)
-            rs_noiselist.append(rs)
-            PPSt_noise[i].pp.noiseFromRandom(rs.r)
             rs.r.uniform(0,1)
             rs.start(random_state)
         }
@@ -458,6 +474,44 @@ begintemplate DentateGyrus
             netcon_d[i].delay = 0.001
             netcon_d[i].threshold = 10.
         }
+
+
+        if (spontaneous_activity_ == 1) {
+            // Input window (box)
+            for i=0, ngcell-1 {
+                rs_noise = new RandomStream(i, random_state)
+                rs_noiselist.append(rs_noise)
+                PPSt_noise[i].pp.noiseFromRandom(rs_noise.r)
+                rs_noise.r.uniform(0,1)
+                rs_noise.start(random_state)
+            }
+
+
+            // artificial pulse to PPSt_noise[i].pp in order to become active...
+            aacell pp_noise_start = new NetStim125(.5)  
+            pp_noise_start.interval = 1e-5
+            pp_noise_start.number = 1
+            pp_noise_start.start = 0
+            pp_noise_start.forcestop = 1.
+            pp_noise_start.noise = 1 
+
+            // assign random number generator
+            rs_noise = new RandomStream(ngcell, random_state)				
+            return_val_ = rslist.append(rs_noise) // save returned value in return_val_ to suppress screen output
+            return_val_ = pp_noise_start.noiseFromRandom(rs_noise.r)
+            return_val_ =  rs_noise.r.negexp(1)
+            return_val_ = rs_noise.start(random_state)
+
+            // each PPSt_noise[i].pp needs to receive a netevent to become active...
+            for i=0, ngcell-1 {
+                netcon_d_noise[i] = new NetCon(pp_noise_start,PPSt_noise[i].pp)
+                netcon_d_noise[i].weight = 10.			 	
+                netcon_d_noise[i].delay = 0.001
+                netcon_d_noise[i].threshold = 10.
+            }
+        }
+        
+        
     }
 
     // ########################################################################
@@ -501,6 +555,10 @@ begintemplate DentateGyrus
         connect_basket_cells()
         connect_mossy_cells()
         connect_hipp_cells()
+        
+        if (spontaneous_activity_ == 1) {
+            add_spontaneous_gc_activity()
+        }
     }
 
     func nc_append() {	
@@ -557,7 +615,7 @@ begintemplate DentateGyrus
     }
 
     proc connect_pp_to_gc() { local i, j localobj pprec
-        /* Function that connects perforant path inputs to granule cells
+        /* Function that connects perforant path inputs to granule cells.
         */
         // Print message to indicate procedure 
         print "Connecting PP to post-synaptic targets."
@@ -568,9 +626,8 @@ begintemplate DentateGyrus
 
         // Objects to record inputs/noise for debugging [TODO] verify necessity...
         //      Must be re-declared with proper value of npp
-        objref vec_stim[npp], vec_stim_noise[npp]
+        objref vec_stim[npp]
         for i = 0, npp-1 { vec_stim[i] = new Vector() }
-        for i = 0, npp-1 { vec_stim_noise[i] = new Vector() }
 
         // Make connections for each individual GC
         for i=0, ngcell-1 {
@@ -603,14 +660,37 @@ begintemplate DentateGyrus
                     // connect PP to GC[j],syn[0],wt,del,threshold   <AH> NOTE both synapses are equal, ie. weight delay (except position) not important
                     nc_append(j+ngcell+nbcell+nmcell+nhcell, i, 0, 2e-2*scale_PP_strength, 3, 10)
                 }
-            }
-            
+            }         
+
             // Print debugging message 
             if (debug_ == 3) {
                 print "\nGC: ",i
                 for ii=0,pp2gc.size()-1 { printf ("%d, ",pp2gc.x[ii]) }
             }
         }
+    }
+
+    proc add_spontaneous_gc_activity() { local i,j 
+        /* Function that adds spontaneous hyperactivity to the granule cells
+        */
+        // Print message to indicate procedure 
+        print "Adding spontaneous GC activity."
+
+        // Objects to record inputs/noise for debugging [TODO] verify necessity...
+        //      Must be re-declared with proper value of npp
+        objref vec_stim_noise[ngcell]
+        for i = 0, ngcell-1 { vec_stim_noise[i] = new Vector() }
+
+
+        // Add spontaneous activity generator  for each individual GC
+        for i=0, ngcell-1 {
+            if ((print_stim_ == 1)) {
+		        nc_append_rec(i+ngcell+nbcell+nmcell+nhcell+npp, i, 0, 2e-2*spontaneous_activity_strength, 0, 0, vec_stim_noise[i])
+            } else {
+	            nc_append(i+ngcell+nbcell+nmcell+nhcell+npp, i, 0, 2e-2*spontaneous_activity_strength, 0, 0) 
+	        }            
+        }
+
     }
 
     proc connect_pp_to_bc() { local i,j 
@@ -1204,7 +1284,7 @@ begintemplate DentateGyrus
         spikefile.close(DGsp_name_)
     }
 
-    proc write_stimuli_to_file() {local i, j localobj stimfile 
+    proc write_stimuli_to_file() {local i, j localobj stimfile, noisestimfile
         /* Writes stimuli to file
         */
         stimfile = new File()
@@ -1219,16 +1299,25 @@ begintemplate DentateGyrus
                 stimfile.printf("%f\t%d\n",vec_stim[i].x[j],i)
             }
         }
+        stimfile.close(f_name_)
 
         // write out noise input...
-        if (print_stim_noise == 1){
-            for i=0,npp-1 {
+        if ((print_stim_noise == 1) && (spontaneous_activity_ == 1)) {
+
+            noisestimfile = new File()
+            strdef f_name_noise_
+            sprint (f_name_noise_,"%s%s-%d-%d-%s.%s", datadir, "NoiseStimIn", PP_box_startid_, PP_box_nr_, idname, suffix)
+
+            noisestimfile.wopen(f_name_noise_)
+            for i=0,ngcell-1 {
                 for j=0,vec_stim_noise[i].size()-1 {
-                    stimfile.printf("%f\t%d\n",vec_stim_noise[i].x[j],i+npp)
+                    noisestimfile.printf("%f\t%d\n",vec_stim_noise[i].x[j],i)
                 }
             }
+            noisestimfile.close(f_name_noise_)
         }
-        stimfile.close(f_name_)
+        
+        
     }
 
     // ########################################################################
@@ -1312,6 +1401,31 @@ begintemplate DentateGyrus
             PPSt[i].pp.forcestop = PP_box_stop_
             PPSt[i].pp.nspk = PP_box_nspk_
         }
+
+        // Initialize the GC spontaneous activity generators
+        // [ TODO ] Need more general way to set the number that receive SA generators
+        //           This needs to be based on the desired frequency of spont. activity. 
+        if (spontaneous_activity_ == 1) {
+            // Rdsa_thresh is the number of granule cells that should be active 
+            //  with a single spike in the simulation window in order to achieve 
+            //  a spontaneous firing rate of `spontaneous_activity_rate`
+            rdsa_thresh = ngcell*(spontaneous_activity_rate/(1000/tstop))
+            for i=0,ngcell-1 {
+                rdsa_rv = rdsa.repick()
+                if (rdsa_rv <= rdsa_thresh) {
+                    PPSt_noise[i].pp.status = 1
+                    PPSt_noise[i].pp.start = 0.
+                    PPSt_noise[i].pp.forcestop = tstop 
+                    PPSt_noise[i].pp.nspk = 1
+                } 
+                if (rdsa_rv > rdsa_thresh) {
+                    PPSt_noise[i].pp.status = 0
+                    PPSt_noise[i].pp.start = 0.
+                    PPSt_noise[i].pp.forcestop = tstop 
+                    PPSt_noise[i].pp.nspk = 0
+                }
+            }
+        }
     }
 
     proc run() {local i, j  
@@ -1329,9 +1443,10 @@ begintemplate DentateGyrus
 
         // RUN SIMULATION 
         print "Running simulation."
+        
         // Write connections to file 
         save_network_connections()
-        for (PP_box_startid_ = 0; PP_box_startid_ <= 12; PP_box_startid_ += 1 ) { 
+        for (PP_box_startid_ = 0; PP_box_startid_ <= n_patterns; PP_box_startid_ += 1 ) { 
             initialize_simulation_run(100)
 
             // File header voltage output file

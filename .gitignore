@@ -4,3 +4,7 @@ mods/*.o
 
 x86_64/*
 __pycache__/*
+
+data/*
+figures/*
+

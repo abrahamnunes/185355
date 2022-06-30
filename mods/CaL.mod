@@ -72,9 +72,6 @@ INITIAL {
 PROCEDURE states() {	:Computes state variables e 
         trates(v)	:      at the current v and dt.
 	e = e + eexp*(einf-e)
-        VERBATIM
-        return 0;
-        ENDVERBATIM
 }
  
 LOCAL q10

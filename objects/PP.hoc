@@ -28,7 +28,7 @@ objref pp
 proc init() {
 	actemp()
     pp_index = $1
-    PP_rate_ = $2
+    PP_rate_ = $2 // Is this even used??
     tstop = $3
     PP_box_start_ = $4
     PP_box_stop_ = $5

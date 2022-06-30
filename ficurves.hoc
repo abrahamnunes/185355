@@ -3,11 +3,11 @@ err_ = load_file("objects/GC.hoc")
 
 print_voltage_tracings = 1
 
-tstop = 2000
-delay = 50
+tstop = 3000
+delay = 1000
 duration = tstop - 2*delay 
 
-n_steps = 20
+n_steps = 100
 v_init = -77.71 
 i_min = 0
 i_max = 0.4
