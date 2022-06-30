@@ -9,8 +9,8 @@ testing with small subset of data first.
 
 @author: selenasingh
 
-GOAL [June 28]: optimize scaling conductance vals to shift I-V curve of one granule cell to fit I-V curve data from ONE cell (starting with HC, NA currents only for now)
-NEXT GOAL [July 5]: Use average of all Na, K currents, HC first. Will require transforming tables provided by AK 
+GOAL [July 2]: optimize params s.t. cell fires at a specific frequency. 
+NEXT GOAL [July 7]: optimize scaling conductance vals to shift I-V curve of one granule cell to fit I-V curve data from ONE cell (starting with HC, NA currents only for now)
 
 """
 
