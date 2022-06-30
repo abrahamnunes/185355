@@ -85,10 +85,9 @@ class VClamp(object):
         Returns: 
             `dict`. Simulation data with the following key-value pairs 
                 - `t`: List representing time [ms]
-                - `V`: List representing membrane voltage [mV]
-                - `spkt`: List of spike times [ms]
-                - `avg_rate`: Average firing rate across whole recording [Hz]
-                - `rate`: Firing rate only during current injection [Hz]
+                - `i_na`: array of sodium currents 
+                - `i_k`: array of potassium currents
+                
         """
         self.netparams.stimSourceParams['vclamp']['amp'] = amp
         sim.createSimulateAnalyze(self.netparams, self.simconfig)
