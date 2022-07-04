@@ -104,6 +104,9 @@ class IVdata(object) :
             
 
 ###### RUN SIMULATIONS
+
+clamp = IClamp(gc)
+
 #IV = IVdata(gc) # instantiate class 
 #voltclamp = IV.step_voltage([0]) #testing if voltclamp works
 #testclamp = IV.compute_ivdata(vlow = -70, vhigh = 20, n_steps = 10, delay = 250, duration = 500)
