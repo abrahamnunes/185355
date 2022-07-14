@@ -1,30 +1,18 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 23 10:32:02 2022
-
-evol'n algorithm to optimize params
-testing with small subset of data first. 
-
-@author: selenasingh
-
-July 4: successfully tuned 1 gc to fire at specific freq.
-
-- figure out how to deal with the parameters in a nice way
-"""
-
 #imports
 import numpy as np 
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg') #hopefully this works over ssh 
 import matplotlib.pyplot as plt
 import pylab              
-from random import Random # pseudorandom number generation
+from random import Random #TODO replace with numpy rand f'n.  pseudorandom number generation
 from inspyred import ec   # evolutionary algorithm
 from netpyne import specs, sim   # neural network design and simulation
 from clamps import IClamp
 #from find-rheobase import ElectrophysiologicalPhenotype
 from scipy.signal import find_peaks
 from tabulate import tabulate
+from FI_fromdata import extractFI
 
 #from IVdata import IVdata # import voltage clamp data from simulated GC 
 
@@ -40,28 +28,46 @@ gc = netparams.importCellParams(
     importSynMechs=False
 )
 
+#parameters to be optimized 
+free_params = {
+    'HT': ['gbar'],
+    'LT': ['gbar'],
+    'bk': ['gkbar'],
+    'ichan2': ['gnatbar', 'gkfbar', 'gksbar', 'gl', 'ggabaa'], 
+    'ka': ['gkabar'],
+    'kir': ['gkbar', 'kl', 'at', 'bt'], 
+    'km': ['gbar'], 
+    'lca': ['glcabar'], 
+    'nca': ['gncabar'], 
+    'sk': ['gskbar'], 
+    'tca': ['gcatbar']
+    }
+
 #import raw data 
-#FI_curve = pd.read_csv("rawdata/firsttest.csv")
+#rawhc = pd.read_csv("rawdata/HC_FI.csv")
 
 class optimizeparams(object):
     def __init__(self, 
                  cell,
-                 num_inputs = 18, #number of parameters to be optimized
+                 #celldata,
+                 free_params,
                  pop_size = 10,
-                 max_evaluations = 100, 
+                 max_evaluations = 20, 
                  num_selected = 10, 
                  mutation_rate = 0.2, 
                  num_elites = 1,
                  targetRate = 25,
-                 current = 0.33):
+                 current = 0.33
+                 ):
         
         self.cell_dict = {"secs": cell["secs"]}
-        self.iv_interm = {}
+        self.free_params = free_params
+        #self.FI_curve = celldata
         self.initialParams = []
-        self.iv_data = None 
         self.minParamValues = []
         self.maxParamValues = []
-        self.num_inputs = num_inputs
+        self.num_inputs = 18
+        self.free_params = free_params
         self.pop_size = pop_size 
         self.max_evaluations = max_evaluations 
         self.num_selected = num_selected
@@ -86,44 +92,29 @@ class optimizeparams(object):
         iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay*2)
         res = iclamp(self.current)
         return res 
+    
 
     def retrieve_baseline_params(self):
-        baseline = [0]*self.num_inputs
+        self.baseline = []
+        for key in self.free_params.keys():
+            for val in self.free_params[key]:
+                self.baseline.append(self.cell_dict['secs']['soma']['mechs'][key][val])
         
-        baseline[0] =  self.cell_dict['secs']['soma']['mechs']['HT']['gbar']
-        baseline[1] = self.cell_dict['secs']['soma']['mechs']['LT']['gbar'] 
-        baseline[2] = self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] 
-        baseline[3] = self.cell_dict['secs']['soma']['mechs']['ichan2']['gnatbar'] 
-        baseline[4] = self.cell_dict['secs']['soma']['mechs']['ichan2']['gkfbar'] 
-        baseline[5] = self.cell_dict['secs']['soma']['mechs']['ichan2']['gksbar'] 
-        baseline[6] = self.cell_dict['secs']['soma']['mechs']['ichan2']['gl'] 
-        baseline[7] = self.cell_dict['secs']['soma']['mechs']['ichan2']['ggabaa'] 
-        baseline[8] = self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] 
-        baseline[9] = self.cell_dict['secs']['soma']['mechs']['kir']['gkbar'] 
-        baseline[10] = self.cell_dict['secs']['soma']['mechs']['kir']['kl'] 
-        baseline[11] = self.cell_dict['secs']['soma']['mechs']['kir']['at'] 
-        baseline[12] = self.cell_dict['secs']['soma']['mechs']['kir']['bt'] 
-        baseline[13] = self.cell_dict['secs']['soma']['mechs']['km']['gbar'] 
-        baseline[14] = self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] 
-        baseline[15] = self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] 
-        baseline[16] = self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] 
-        baseline[17] = self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar']
+        self.num_inputs = len(self.baseline)
         
-        return baseline
+        return self.baseline 
             
-
     def generate_netparams(self, random, args):
         self.initialParams = [random.uniform(self.minParamValues[i], self.maxParamValues[i]) for i in range(self.num_inputs)]
         self.initialParams
         return self.initialParams
         
-# design fitness function, used in the ec evolve function --> final_pop = my_ec.evolve(...,evaluator=evaluate_netparams,...)
+    # design fitness function, used in the ec evolve function --> final_pop = my_ec.evolve(...,evaluator=evaluate_netparams,...)
     def evaluate_netparams(self, candidates, args):
         self.fitnessCandidates = []
 
         for icand,cand in enumerate(candidates):
-            
-            # [TODO] find a better way to do this:
+            #TODO find way to use free_params here to remove this ugly situation
             self.cell_dict['secs']['soma']['mechs']['HT']['gbar'] = cand[0]
             self.cell_dict['secs']['soma']['mechs']['LT']['gbar'] = cand[1]
             self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] = cand[2]
@@ -143,10 +134,9 @@ class optimizeparams(object):
             self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[16]
             self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[17]
             
-            
             clamp = self.curr_inj(self.current)
             
-            ## find number of spikes, 'rate' is highly inaccurate for spikes with peaks < ~10mV
+            #find number of spikes, 'rate' is highly inaccurate for spikes with peaks < ~10mV
             spikes = find_peaks(clamp['V'], 0) 
             num_spikes = len(spikes[0]) 
             
@@ -160,10 +150,7 @@ class optimizeparams(object):
         rand = Random()
         rand.seed(1)
         
-                                ## [TODO] find biologically plausible vals for these min max bounds.
-        #self.minParamValues = [0.05, 0.01, 0.001] #0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        #self.maxParamValues = [0.6, 0.005, 0.01] #0.6, 0.06, 0.01, 1.44e-05, 7.22e-05, 0.05, 15.0, 0.007, 0.1, 0.005, 0.01, 0.004, 0.05, 6e-05]
-        
+        #TODO find biologically plausible vals for min max bounds        
         self.minParamValues = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.maxParamValues = [0.0001, 0.0001, 0.001, 0.6, 0.005, 0.01, 1.44e-05, 7.22e-05, 0.05, 0.0001, 15.0, 0.012, 0.1, 0.005, 0.01, 0.004, 0.05, 6e-05]
         
@@ -174,10 +161,11 @@ class optimizeparams(object):
         self.gc_ec.replacer = ec.replacers.generational_replacement  
         self.gc_ec.terminator = ec.terminators.evaluation_termination
         
-        self.gc_ec.observer = [ec.observers.stats_observer,  # print evolutionary computation statistics
-                  ec.observers.plot_observer,   # plot output of the evolutionary computation as graph
-                  ec.observers.best_observer] 
-        
+        self.gc_ec.observer = ec.observers.plot_observer#[ec.observers.stats_observer,  # print evolutionary computation statistics
+                  #ec.observers.plot_observer,   # plot output of the evolutionary computation as graph
+                  #ec.observers.file_observer,
+                  #ec.observers.best_observer]
+                
         self.final_pop = self.gc_ec.evolve(generator=self.generate_netparams,  # assign design parameter generator to iterator parameter generator
                               evaluator=self.evaluate_netparams,     # assign fitness function to iterator evaluator
                               pop_size=self.pop_size,                      # each generation of parameter sets will consist of 10 individuals
@@ -192,70 +180,54 @@ class optimizeparams(object):
         self.final_pop.sort(reverse=True)                            # sort final population so best fitness (minimum difference) is first in list
         self.bestCand = self.final_pop[0].candidate                       # bestCand <-- individual @ start of list
 
+        plt.savefig('figures/op_output/observer.png')
         return self.bestCand
     
     def build_optimizedcell(self):
+        j = 0 
         
-        self.cell_dict['secs']['soma']['mechs']['HT']['gbar'] = self.bestCand[0]
-        self.cell_dict['secs']['soma']['mechs']['LT']['gbar'] = self.bestCand[1]
-        self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] = self.bestCand[2]
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['gnatbar'] = self.bestCand[3]
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['gkfbar'] = self.bestCand[4]
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['gksbar'] = self.bestCand[5]
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['gl'] = self.bestCand[6]
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['ggabaa'] = self.bestCand[7]
-        self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = self.bestCand[8]
-        self.cell_dict['secs']['soma']['mechs']['kir']['gkbar'] = self.bestCand[9]
-        self.cell_dict['secs']['soma']['mechs']['kir']['kl'] = self.bestCand[10]
-        self.cell_dict['secs']['soma']['mechs']['kir']['at'] = self.bestCand[11]
-        self.cell_dict['secs']['soma']['mechs']['kir']['bt'] = self.bestCand[12]
-        self.cell_dict['secs']['soma']['mechs']['km']['gbar'] = self.bestCand[13]
-        self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = self.bestCand[14]
-        self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = self.bestCand[15]
-        self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = self.bestCand[16]
-        self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = self.bestCand[17]
-        
+        for key in self.free_params.keys():
+            for val in self.free_params[key]:
+                self.cell_dict['secs']['soma']['mechs'][key][val] = self.bestCand[j]
+                j = j + 1
+
         finalclamp = self.curr_inj(self.current)
-        #findspikes = find_peaks(finalclamp['V'],0)
-        #finalfreq = len(findspikes[0])
         
-        return finalclamp #, finalfreq
+        return finalclamp 
     
+    def return_summarydata(self):
+        
+        baselineparams = self.retrieve_baseline_params()
+        baselinecell = self.curr_inj(self.current)
+        
+        newparams = self.find_bestcandidate()
+        newcell = self.build_optimizedcell()
+        
+        
+        diffs = [x1 - x2 for (x1, x2) in zip(newparams, baselineparams)]
+
+        paramnames = sum(free_params.values(), [])
+
+        headers = ['paramname', 'baseline', 'optimized', 'diff']
+
+        summtable = zip(paramnames, baselineparams, newparams, diffs)
+        
+        with open ('data/parameters/sumtable.txt', 'w') as f:    
+           f.write(tabulate(summtable, headers=headers))
+        
+        figure, axis = plt.subplots(2,1, constrained_layout=True)
+
+        axis[0].plot(baselinecell['t'], baselinecell['V'])
+        axis[0].set_title("Baseline cell")
+
+        axis[1].plot(newcell['t'], newcell['V'])
+        axis[1].set_title("Optimized cell")
+        
+        figure.savefig('figures/op_output/baseline_optimized.png')
     
 
-  
-
-#----------run simulations 
-init = optimizeparams(gc)
-baselineparams = init.retrieve_baseline_params()
-baselinecell = init.curr_inj(0.33)
-
-op = optimizeparams(gc)
-newparams = op.find_bestcandidate()
-newcell = op.build_optimizedcell()
-
-#----------CONSTRUCT PARAM COMPARISON TABLE 
-diffs = [x1 - x2 for (x1, x2) in zip(newparams, baselineparams)]
-
-paramnames = ['HTgbar', 'LTgbar', 'bkgbar', 'gnatbar', 'gkfbar', 'gksbar', 'gl', 'ggabaa', 'gkabar', 'gkbar', 'kl', 'at', 'bt', 'gkmbar', 'glcabar', 'gncabar', 'gskbar', 'gcatbar']
-
-headers = ['paramname', 'baseline', 'optimized', 'diff']
-
-summtable = zip(paramnames, baselineparams, newparams, diffs)
-
-print(tabulate(summtable, headers=headers))
-
-
-#----------PLOTTING
-figure, axis = plt.subplots(2,1, constrained_layout=True)
-
-axis[0].plot(baselinecell['t'], baselinecell['V'])
-axis[0].set_title("Baseline cell")
-
-axis[1].plot(newcell['t'], newcell['V'])
-axis[1].set_title("Optimized cell")
-
-
+op = optimizeparams(gc, free_params)
+op.return_summarydata() 
 
 
 
