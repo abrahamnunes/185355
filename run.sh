@@ -9,14 +9,14 @@ mkdir figures/raster-plots
 mkdir figures/pattern-separation
 mkdir figures/voltage-tracings
 mkdir figures/fi-curves
-mkdir figures/op_output
+mkdir figures/op-output
 
 # Get FI Curves
 
 # Run DG Model 
-nrnivmodl mods
-python optimize_params.py
-#nrniv main.hoc
+arch -arch x86_64 nrnivmodl mods #this works w apple m1
+python3 optimize_params.py
+#arch -arch x86_64 nrniv main.hoc
 
 # Plot Network Structure
 
