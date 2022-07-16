@@ -14,8 +14,11 @@ mkdir figures/op-output
 # Get FI Curves
 
 # Run DG Model 
-arch -arch x86_64 nrnivmodl mods #this works w apple m1
-python3 optimize_params.py
+#if wanting to run natively on m1
+nrnivmodl mods
+python optimize_params.py
+#if wanting to run using Rosetta
+#arch -arch x86_64 nrnivmodl mods
 #arch -arch x86_64 nrniv main.hoc
 
 # Plot Network Structure
