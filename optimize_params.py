@@ -1,18 +1,20 @@
 #imports
-import numpy as np 
+import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use('Agg') #hopefully this works over ssh 
+matplotlib.use('Agg') #hopefully this works over ssh
 import matplotlib.pyplot as plt
-import pylab              
+import pylab
 from random import Random #TODO replace with numpy rand f'n.  pseudorandom number generation
 from inspyred import ec   # evolutionary algorithm
 from netpyne import specs, sim   # neural network design and simulation
 from clamps import IClamp
-#from find-rheobase import ElectrophysiologicalPhenotype
+from find_rheobase import ElectrophysiologicalPhenotype
 from scipy.signal import find_peaks
 from tabulate import tabulate
 from FI_fromdata import extractFI
+import similaritymeasures
+
 
 #from IVdata import IVdata # import voltage clamp data from simulated GC 
 
@@ -44,25 +46,27 @@ free_params = {
     }
 
 #import raw data 
-#rawhc = pd.read_csv("rawdata/HC_FI.csv")
+rawhc = pd.read_csv("rawdata/HC_FI.csv")
 
 class optimizeparams(object):
     def __init__(self, 
                  cell,
-                 #celldata,
                  free_params,
+                 celldata,
+                 condition,
                  pop_size = 10,
-                 max_evaluations = 20, 
+                 max_evaluations = 150,
                  num_selected = 10, 
-                 mutation_rate = 0.2, 
+                 mutation_rate = 0.1,
                  num_elites = 1,
-                 targetRate = 25,
-                 current = 0.33
+                 targetRate = 12,
+                 current = 0.33 #nA , meaning this is "330pA". AK's data reports vals like 33pA. Pretty sure that's wrong.
                  ):
         
         self.cell_dict = {"secs": cell["secs"]}
         self.free_params = free_params
-        #self.FI_curve = celldata
+        self.FI_curve = celldata
+        self.condition = condition
         self.initialParams = []
         self.minParamValues = []
         self.maxParamValues = []
@@ -78,17 +82,6 @@ class optimizeparams(object):
 
         
     def curr_inj(self, delay=0, duration=1000):
-        """ Injects a level of current and returns the number of spikes emitted
-        
-        Arguments: 
-            current: `float`. Amount of current injected [nA]
-            delay: `float`. Time after recording starts where current is injected [ms]
-            duration: `float`. Total duration of the current injection [ms]
-        
-        Returns: 
-            `dict`. Results of the step current injection simulation
-        
-        """
         iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay*2)
         res = iclamp(self.current)
         return res 
@@ -99,11 +92,22 @@ class optimizeparams(object):
         for key in self.free_params.keys():
             for val in self.free_params[key]:
                 self.baseline.append(self.cell_dict['secs']['soma']['mechs'][key][val])
-        
         self.num_inputs = len(self.baseline)
         
         return self.baseline 
-            
+    
+    def sim_fi(self):
+        ep = ElectrophysiologicalPhenotype(self.cell_dict)
+        self.simfi_df = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
+        self.simfi = self.simfi_df.to_numpy()
+        return self.simfi
+    
+    def data_fi(self):
+        efi = extractFI(self.FI_curve, self.condition)
+        self.avgFI = efi.averageFI()
+        
+        return self.avgFI
+        
     def generate_netparams(self, random, args):
         self.initialParams = [random.uniform(self.minParamValues[i], self.maxParamValues[i]) for i in range(self.num_inputs)]
         self.initialParams
@@ -134,16 +138,19 @@ class optimizeparams(object):
             self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[16]
             self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[17]
             
-            clamp = self.curr_inj(self.current)
+            #clamp = self.curr_inj(self.current)
+            FI_data = self.data_fi() 
+            FI_sim = self.sim_fi()
             
             #find number of spikes, 'rate' is highly inaccurate for spikes with peaks < ~10mV
-            spikes = find_peaks(clamp['V'], 0) 
-            num_spikes = len(spikes[0]) 
-            
-            #targetRate = 45
-            fitness = abs(self.targetRate - num_spikes)
-            self.fitnessCandidates.append(fitness)
+            #spikes = find_peaks(clamp['V'], 0) 
+            #num_spikes = len(spikes[0]) 
         
+            #TODO compute difference between two curves. Start with area between curves.
+            fitness = abs(similaritymeasures.area_between_two_curves(FI_data, FI_sim))
+            #fitness = abs(self.targetRate - num_spikes)
+            self.fitnessCandidates.append(fitness)
+
         return self.fitnessCandidates
     
     def find_bestcandidate(self):
@@ -180,7 +187,7 @@ class optimizeparams(object):
         self.final_pop.sort(reverse=True)                            # sort final population so best fitness (minimum difference) is first in list
         self.bestCand = self.final_pop[0].candidate                       # bestCand <-- individual @ start of list
 
-        plt.savefig('figures/op_output/observer.png')
+        plt.savefig('figures/op-output/observer.png')
         return self.bestCand
     
     def build_optimizedcell(self):
@@ -193,17 +200,24 @@ class optimizeparams(object):
 
         finalclamp = self.curr_inj(self.current)
         
+        self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
+        self.fi = self.ep_opt.compute_fi_curve(ilow = 0, ihigh = 0.33, n_steps = 12, delay = 0, duration = 1000)
+        
         return finalclamp 
     
     def return_summarydata(self):
         
         baselineparams = self.retrieve_baseline_params()
         baselinecell = self.curr_inj(self.current)
+        baselinecellfi = self.sim_fi()
+        
         
         newparams = self.find_bestcandidate()
         newcell = self.build_optimizedcell()
+        newcellfi = self.sim_fi()
         
-        
+        exp_fi = self.data_fi()
+
         diffs = [x1 - x2 for (x1, x2) in zip(newparams, baselineparams)]
 
         paramnames = sum(free_params.values(), [])
@@ -215,7 +229,8 @@ class optimizeparams(object):
         with open ('data/parameters/sumtable.txt', 'w') as f:    
            f.write(tabulate(summtable, headers=headers))
         
-        figure, axis = plt.subplots(2,1, constrained_layout=True)
+        #fig1 = plt.figure("baseline_optimized")
+        fig1, axis = plt.subplots(2, 1, constrained_layout=True)
 
         axis[0].plot(baselinecell['t'], baselinecell['V'])
         axis[0].set_title("Baseline cell")
@@ -223,11 +238,33 @@ class optimizeparams(object):
         axis[1].plot(newcell['t'], newcell['V'])
         axis[1].set_title("Optimized cell")
         
-        figure.savefig('figures/op_output/baseline_optimized.png')
-    
+        fig1.savefig('figures/op-output/baseline_optimized.png')
+        
+        
+        fig2 = plt.figure("fivsfi")
+        plt.plot(baselinecellfi[:,0], baselinecellfi[:,1], label='Baseline')
+        plt.plot(newcellfi[:,0], newcellfi[:,1], label='Optimized')
+        plt.plot(exp_fi[:,0], exp_fi[0:,1], label='Data')
+        plt.xlabel("Current (nA)")
+        plt.ylabel("Number of Spikes")
+        plt.legend(loc="upper left")
+        
+        fig2.savefig('figures/op-output/fivsfi.png')
 
-op = optimizeparams(gc, free_params)
-op.return_summarydata() 
+        #return self.newcellfi
+
+op = optimizeparams(gc, free_params, rawhc, 'CTRL')
+
+op.return_summarydata()
+
+'''
+fig = plt.figure()
+plt.plot(simfi[:,0], simfi[:,1])
+plt.plot(expfi[:,0], expfi[:,1])
+
+fig.savefig('test.png')
+'''
+#area = similaritymeasures.area_between_two_curves(simfi, expfi)
 
 
 
