@@ -46,14 +46,17 @@ free_params = {
 # import raw data
 rawhc = pd.read_csv("rawdata/HC_FI.csv")
 
+
 class optimizeparams(object):
     def __init__(self,
                  cell,
                  free_params,
                  celldata,
-                 condition,
+                 population,  # str, either 'HC', 'LR', 'NR'
+                 condition,  # str , either 'CTRL' or 'LITM'
+                 difference_method, #str
                  pop_size=10,
-                 max_evaluations=150,
+                 max_evaluations=170,
                  num_selected=10,
                  mutation_rate=0.1,
                  num_elites=1,
@@ -65,6 +68,8 @@ class optimizeparams(object):
         self.free_params = free_params
         self.FI_curve = celldata
         self.condition = condition
+        self.population = population
+        self.difference_method = difference_method
         self.initialParams = []
         self.minParamValues = []
         self.maxParamValues = []
@@ -76,11 +81,12 @@ class optimizeparams(object):
         self.mutation_rate = mutation_rate
         self.num_elites = num_elites
         self.targetRate = targetRate
-        self.current = current
+        self.flag = str(self.population + '_' + self.condition + '_' + self.difference_method)
+        # self.current = current
 
-    def curr_inj(self, delay=0, duration=1000):
+    def curr_inj(self, current, delay=0, duration=1000):
         iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
-        res = iclamp(self.current)
+        res = iclamp(current)
         return res
 
     def retrieve_baseline_params(self):
@@ -104,7 +110,8 @@ class optimizeparams(object):
         return self.avgFI
 
     def generate_netparams(self, random, args):
-        self.initialParams = [random.uniform(self.minParamValues[i], self.maxParamValues[i]) for i in range(self.num_inputs)]
+        self.initialParams = [random.uniform(self.minParamValues[i], self.maxParamValues[i]) for i in
+                              range(self.num_inputs)]
         self.initialParams
         return self.initialParams
 
@@ -140,9 +147,16 @@ class optimizeparams(object):
             # find number of spikes, 'rate' is highly inaccurate for spikes with peaks < ~10mV
             # spikes = find_peaks(clamp['V'], 0)
             # num_spikes = len(spikes[0])
-
-            # TODO compute difference between two curves. Start with area between curves.
-            fitness = abs(similaritymeasures.area_between_two_curves(FI_data, FI_sim))
+            if self.difference_method == "Area":
+                fitness = abs(similaritymeasures.area_between_two_curves(FI_data, FI_sim))
+            elif self.difference_method == "Frechet":
+                fitness = abs(similaritymeasures.frechet_dist(FI_data, FI_sim))
+            elif self.difference_method == "CL":
+                fitness = abs(similaritymeasures.curve_length_measure(FI_data, FI_sim))
+            elif self.difference_method == "PCM":
+                fitness = abs(similaritymeasures.pcm(FI_data, FI_sim))
+            elif self.difference_method == "DTW":
+                fitness = abs(similaritymeasures.dtw(FI_data, FI_sim)[0])
             # fitness = abs(self.targetRate - num_spikes)
             self.fitnessCandidates.append(fitness)
 
@@ -165,6 +179,7 @@ class optimizeparams(object):
         self.gc_ec.replacer = ec.replacers.generational_replacement
         self.gc_ec.terminator = ec.terminators.evaluation_termination
         self.gc_ec.observer = ec.observers.plot_observer
+        #self.gc_ec.observer = ec.observers.file_observer
 
         self.final_pop = self.gc_ec.evolve(generator=self.generate_netparams,
                                            # assign design parameter generator to iterator parameter generator
@@ -186,30 +201,62 @@ class optimizeparams(object):
         self.final_pop.sort(reverse=True)  # sort final population so best fitness (minimum difference) is first in list
         self.bestCand = self.final_pop[0].candidate  # bestCand <-- individual @ start of list
 
-        plt.savefig('figures/op-output/observer.png')
+        plt.savefig('figures/op-output/observer_%s.png' % self.flag)
+        plt.close()
         return self.bestCand
 
-    def build_optimizedcell(self):
+    def build_optimizedcell(self, currentval=0.33):
         j = 0
         for key in self.free_params.keys():
             for val in self.free_params[key]:
                 self.cell_dict['secs']['soma']['mechs'][key][val] = self.bestCand[j]
                 j = j + 1
-        finalclamp = self.curr_inj(self.current)
+        finalclamp = self.curr_inj(currentval)
         self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
         self.fi = self.ep_opt.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
 
         return finalclamp
 
     def return_summarydata(self):
-
+        currentvals = np.linspace(0, 0.33, 12)
         baselineparams = self.retrieve_baseline_params()
-        baselinecell = self.curr_inj(self.current)
         baselinecellfi = self.sim_fi()
+
+        fig1, axis = plt.subplots(12, 1)
+        j = 0
+        for currentval in currentvals:
+            baselinecell = self.curr_inj(currentval)
+            axis[j].plot(baselinecell['t'], baselinecell['V'], label='$%.2f nA$' % currentval)
+            box = axis[j].get_position()
+            axis[j].set_position([box.x0, box.y0, box.width * 0.7, box.height])
+            axis[j].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            axis[j].yaxis.set_visible(False)
+            j = j + 1
+        fig1.supxlabel('Time (ms)')
+        fig1.supylabel('Membrane Potential')
+        fig1.suptitle('Baseline: %s' % self.flag)
+        fig1.savefig('figures/op-output/baseline_%s.png' % self.flag)
+        plt.close(fig1)
 
         newparams = self.find_bestcandidate()
         newcell = self.build_optimizedcell()
         newcellfi = self.sim_fi()
+
+        fig2, axis = plt.subplots(12, 1)
+        i = 0
+        for currentval in currentvals:
+            newcell = self.curr_inj(currentval)
+            axis[i].plot(newcell['t'], newcell['V'], label='$%.2f nA$' % currentval)
+            box = axis[i].get_position()
+            axis[i].set_position([box.x0, box.y0, box.width * 0.7, box.height])
+            axis[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            axis[i].yaxis.set_visible(False)
+            i = i + 1
+        fig2.supxlabel('Time (ms)')
+        fig2.supylabel('Membrane Potential')
+        fig2.suptitle('Optimized: %s' % self.flag)
+        fig2.savefig('figures/op-output/optimized_%s.png' % self.flag)
+        plt.close(fig2)
 
         exp_fi = self.data_fi()
 
@@ -218,27 +265,22 @@ class optimizeparams(object):
         headers = ['paramname', 'baseline', 'optimized', 'diff']
         summtable = zip(paramnames, baselineparams, newparams, diffs)
 
-        with open('data/parameters/sumtable.txt', 'w') as f:
+        with open('data/parameters/sumtable_%s.txt' % self.flag, 'w') as f:
             f.write(tabulate(summtable, headers=headers))
 
-        fig1, axis = plt.subplots(2, 1, constrained_layout=True)
-        axis[0].plot(baselinecell['t'], baselinecell['V'])
-        axis[0].set_title("Baseline cell")
-        axis[1].plot(newcell['t'], newcell['V'])
-        axis[1].set_title("Optimized cell")
-        fig1.savefig('figures/op-output/baseline_optimized.png')
-
-        fig2 = plt.figure("fivsfi")
+        fig3 = plt.figure("fivsfi")
         plt.plot(baselinecellfi[:, 0], baselinecellfi[:, 1], label='Baseline')
         plt.plot(newcellfi[:, 0], newcellfi[:, 1], label='Optimized')
         plt.plot(exp_fi[:, 0], exp_fi[0:, 1], label='Data')
         plt.xlabel("Current (nA)")
         plt.ylabel("Number of Spikes")
         plt.legend(loc="upper left")
-        fig2.savefig('figures/op-output/fivsfi.png')
+        fig3.savefig('figures/op-output/fivsfi_%s.png' % self.flag)
 
-        # return self.newcellfi
 
-op = optimizeparams(gc, free_params, rawhc, 'CTRL')
-op.return_summarydata()
 
+#op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL')
+#op_c.return_summarydata()
+
+op_li = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL','DTW')
+op_li.return_summarydata()
