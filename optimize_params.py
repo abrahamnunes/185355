@@ -45,6 +45,8 @@ free_params = {
 
 # import raw data
 rawhc = pd.read_csv("rawdata/HC_FI.csv")
+rawlr = pd.read_csv("rawdata/LR_FI.csv")
+rawnr = pd.read_csv("rawdata/NR_FI.csv")
 
 
 class optimizeparams(object):
@@ -54,7 +56,7 @@ class optimizeparams(object):
                  celldata,
                  population,  # str, either 'HC', 'LR', 'NR'
                  condition,  # str , either 'CTRL' or 'LITM'
-                 difference_method, #str
+                 difference_method,  # str
                  pop_size=10,
                  max_evaluations=170,
                  num_selected=10,
@@ -100,7 +102,7 @@ class optimizeparams(object):
 
     def sim_fi(self):
         ep = ElectrophysiologicalPhenotype(self.cell_dict)
-        self.simfi_df = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
+        self.simfi_df = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=24, delay=0, duration=1000)
         self.simfi = self.simfi_df.to_numpy()
         return self.simfi
 
@@ -279,8 +281,14 @@ class optimizeparams(object):
 
 
 
-#op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL')
+#op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL', 'Area')
 #op_c.return_summarydata()
 
-op_li = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL','DTW')
-op_li.return_summarydata()
+#op_li = optimizeparams(gc, free_params, rawhc, 'HC', 'LITM','Area')
+#op_li.return_summarydata()
+
+#op_lr_ctrl = optimizeparams(gc, free_params, rawnr, 'NR', 'CTRL', 'PCM')
+#op_lr_ctrl.return_summarydata()
+
+op_lr_litm = optimizeparams(gc, free_params, rawlr, 'LR', 'CTRL', 'DTW')
+op_lr_litm.return_summarydata()
