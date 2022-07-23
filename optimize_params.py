@@ -58,9 +58,9 @@ class optimizeparams(object):
                  condition,  # str , either 'CTRL' or 'LITM'
                  difference_method,  # str
                  pop_size=10,
-                 max_evaluations=170,
+                 max_evaluations=400,
                  num_selected=10,
-                 mutation_rate=0.1,
+                 mutation_rate=0.03,
                  num_elites=1,
                  targetRate=12,
                  current=0.33
@@ -102,7 +102,7 @@ class optimizeparams(object):
 
     def sim_fi(self):
         ep = ElectrophysiologicalPhenotype(self.cell_dict)
-        self.simfi_df = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=24, delay=0, duration=1000)
+        self.simfi_df = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
         self.simfi = self.simfi_df.to_numpy()
         return self.simfi
 
@@ -149,16 +149,19 @@ class optimizeparams(object):
             # find number of spikes, 'rate' is highly inaccurate for spikes with peaks < ~10mV
             # spikes = find_peaks(clamp['V'], 0)
             # num_spikes = len(spikes[0])
+
             if self.difference_method == "Area":
                 fitness = abs(similaritymeasures.area_between_two_curves(FI_data, FI_sim))
             elif self.difference_method == "Frechet":
                 fitness = abs(similaritymeasures.frechet_dist(FI_data, FI_sim))
-            elif self.difference_method == "CL":
+            elif self.difference_method == "CL":  # curve length (i.e., arc-length)
                 fitness = abs(similaritymeasures.curve_length_measure(FI_data, FI_sim))
-            elif self.difference_method == "PCM":
+            elif self.difference_method == "PCM":  # partial curve mapping
                 fitness = abs(similaritymeasures.pcm(FI_data, FI_sim))
-            elif self.difference_method == "DTW":
+            elif self.difference_method == "DTW":  # dynamic time warping
                 fitness = abs(similaritymeasures.dtw(FI_data, FI_sim)[0])
+            elif self.difference_method == "MSE":  # for sim fi with 12 steps
+                fitness = np.sum([((x1 - x2) ** 2) for (x1, x2) in zip(FI_data[:, 1], FI_sim[:, 1])]) / 12
             # fitness = abs(self.targetRate - num_spikes)
             self.fitnessCandidates.append(fitness)
 
@@ -181,7 +184,7 @@ class optimizeparams(object):
         self.gc_ec.replacer = ec.replacers.generational_replacement
         self.gc_ec.terminator = ec.terminators.evaluation_termination
         self.gc_ec.observer = ec.observers.plot_observer
-        #self.gc_ec.observer = ec.observers.file_observer
+        # self.gc_ec.observer = ec.observers.file_observer
 
         self.final_pop = self.gc_ec.evolve(generator=self.generate_netparams,
                                            # assign design parameter generator to iterator parameter generator
@@ -280,15 +283,14 @@ class optimizeparams(object):
         fig3.savefig('figures/op-output/fivsfi_%s.png' % self.flag)
 
 
+op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL', 'MSE')
+op_c.return_summarydata()
 
-#op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL', 'Area')
-#op_c.return_summarydata()
+# op_li = optimizeparams(gc, free_params, rawhc, 'HC', 'LITM','Area')
+# op_li.return_summarydata()
 
-#op_li = optimizeparams(gc, free_params, rawhc, 'HC', 'LITM','Area')
-#op_li.return_summarydata()
+# op_lr_ctrl = optimizeparams(gc, free_params, rawnr, 'NR', 'CTRL', 'PCM')
+# op_lr_ctrl.return_summarydata()
 
-#op_lr_ctrl = optimizeparams(gc, free_params, rawnr, 'NR', 'CTRL', 'PCM')
-#op_lr_ctrl.return_summarydata()
-
-op_lr_litm = optimizeparams(gc, free_params, rawlr, 'LR', 'CTRL', 'DTW')
-op_lr_litm.return_summarydata()
+# op_lr_litm = optimizeparams(gc, free_params, rawlr, 'LR', 'LITM', 'DTW')
+# op_lr_litm.return_summarydata()
