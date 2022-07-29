@@ -65,7 +65,7 @@ class ElectrophysiologicalPhenotype(object):
             self.fi_curve.iloc[j, 0] = current
             self.fi_curve.iloc[j, 1] = self.fi_data[j]["rate"]
 
-        self._get_rheobase_bracket()
+        #self._get_rheobase_bracket()
 
         return self.fi_curve
 
