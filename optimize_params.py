@@ -30,17 +30,17 @@ gc = netparams.importCellParams(
 
 # parameters to be optimized
 free_params = {
-    'HT': ['gbar'],
-    'LT': ['gbar'],
-    'bk': ['gkbar'],
-    'ichan2': ['gnatbar', 'gkfbar', 'gksbar', 'gl', 'ggabaa'],
-    'ka': ['gkabar'],
-    'kir': ['gkbar', 'kl', 'at', 'bt'],
-    'km': ['gbar'],
-    'lca': ['glcabar'],
-    'nca': ['gncabar'],
-    'sk': ['gskbar'],
-    'tca': ['gcatbar']
+    'HT': ['gbar'],  # high thresh potassium, Kv3.1/2
+    'LT': ['gbar'],  # low thresh potassium, Kv3.1/2
+    'bk': ['gkbar'],  # big conductance, calcium-activated potassium channel
+    'ichan2': ['gnatbar', 'gkfbar', 'gksbar', 'gl', 'ggabaa'],  # KDR channel conductances, sodium conductance
+    'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
+    'kir': ['gkbar'],  # inward rectifier potassium (Kir) channel
+    'km': ['gbar'],  # KM channel
+    'lca': ['glcabar'],  # l-type calcium
+    'nca': ['gncabar'],  # n-type calcium
+    'sk': ['gskbar'],  # small conductance potassium channel
+    'tca': ['gcatbar']  # t-type calcium
 }
 
 # import raw data
@@ -56,14 +56,14 @@ class optimizeparams(object):
                  celldata,
                  population,  # str, either 'HC', 'LR', 'NR'
                  condition,  # str , either 'CTRL' or 'LITM'
-                 difference_method,  # str
+                 difference_method,  # str options: 'Area', 'Frechet', 'DTW', 'PCM', 'MSE', 'CL'
                  pop_size=10,
-                 max_evaluations=400,
+                 max_evaluations=170,
                  num_selected=10,
                  mutation_rate=0.03,
                  num_elites=1,
                  targetRate=12,
-                 current=0.33
+                 # current=0.33
                  ):
 
         self.cell_dict = {"secs": cell["secs"]}
@@ -75,7 +75,7 @@ class optimizeparams(object):
         self.initialParams = []
         self.minParamValues = []
         self.maxParamValues = []
-        self.num_inputs = 18
+        self.num_inputs = 15
         self.free_params = free_params
         self.pop_size = pop_size
         self.max_evaluations = max_evaluations
@@ -133,14 +133,11 @@ class optimizeparams(object):
             self.cell_dict['secs']['soma']['mechs']['ichan2']['ggabaa'] = cand[7]
             self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = cand[8]
             self.cell_dict['secs']['soma']['mechs']['kir']['gkbar'] = cand[9]
-            self.cell_dict['secs']['soma']['mechs']['kir']['kl'] = cand[10]
-            self.cell_dict['secs']['soma']['mechs']['kir']['at'] = cand[11]
-            self.cell_dict['secs']['soma']['mechs']['kir']['bt'] = cand[12]
-            self.cell_dict['secs']['soma']['mechs']['km']['gbar'] = cand[13]
-            self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = cand[14]
-            self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = cand[15]
-            self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[16]
-            self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[17]
+            self.cell_dict['secs']['soma']['mechs']['km']['gbar'] = cand[10]
+            self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = cand[11]
+            self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = cand[12]
+            self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[13]
+            self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[14]
 
             # clamp = self.curr_inj(self.current)
             FI_data = self.data_fi()
@@ -171,18 +168,19 @@ class optimizeparams(object):
         rand = Random()
         rand.seed(1)
 
-        # TODO find biologically plausible vals for min max bounds
-        self.minParamValues = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        self.maxParamValues = [0.0001, 0.0001, 0.001, 0.6, 0.005, 0.01, 1.44e-05, 7.22e-05, 0.05, 0.0001, 15.0, 0.012,
-                               0.1, 0.005, 0.01, 0.004, 0.05, 6e-05]
+        # self.minParamValues = [0.0] * self.num_inputs
+        normal_vals = [0.0004, 0.0004, 0.01, 0.12, 0.016, 0.006, 1.44e-05, 7.22e-6, 0.012, 1.44e-5, 0.001, 0.005,
+                       0.002, 0.001, 3.7e-5]  # referenced from Stern, and mod files
+        self.minParamValues = list(np.array(normal_vals) * 0.1)  # allow min vals to be 90% lower
+        self.maxParamValues = list(np.array(normal_vals) * 1.8)  # allow max vals to be 80% higher
 
         self.gc_ec = ec.EvolutionaryComputation(rand)
-        self.gc_ec.selector = ec.selectors.tournament_selection
-        self.gc_ec.variator = [ec.variators.uniform_crossover,
-                               # biased coin flip to determine whether 'mom' or 'dad' element is passed to offspring design
-                               ec.variators.gaussian_mutation]
+        self.gc_ec.selector = ec.selectors.truncation_selection  # truncation selection is purely deterministic. Choses param populations based on absol fitness
+        # self.gc_ec.variator = ec.variators.uniform_crossover
+        self.gc_ec.variator = [ec.variators.uniform_crossover, ec.variators.gaussian_mutation]
         self.gc_ec.replacer = ec.replacers.generational_replacement
-        self.gc_ec.terminator = ec.terminators.evaluation_termination
+        # self.gc_ec.terminator = ec.terminators.average_fitness_termination # will terminate when avg fitness - best fitness < 0.001
+        self.gc_ec.terminator = ec.terminators.evaluation_termination  # terminates after max number of evals is met
         self.gc_ec.observer = ec.observers.plot_observer
         # self.gc_ec.observer = ec.observers.file_observer
 
@@ -196,7 +194,6 @@ class optimizeparams(object):
                                            bounder=ec.Bounder(self.minParamValues, self.maxParamValues),
                                            # boundaries for parameter set ([probability, weight, delay])
                                            max_evaluations=self.max_evaluations,
-                                           # evolutionary algorithm termination at 50 evaluations
                                            num_selected=self.num_selected,
                                            # number of generated parameter sets to be selected for next generation
                                            mutation_rate=self.mutation_rate,  # rate of mutation
@@ -275,22 +272,19 @@ class optimizeparams(object):
 
         fig3 = plt.figure("fivsfi")
         plt.plot(baselinecellfi[:, 0], baselinecellfi[:, 1], label='Baseline')
+        plt.errorbar(exp_fi[:, 0], exp_fi[:, 1], yerr = exp_fi[:, 2], label='Data')
         plt.plot(newcellfi[:, 0], newcellfi[:, 1], label='Optimized')
-        plt.plot(exp_fi[:, 0], exp_fi[0:, 1], label='Data')
         plt.xlabel("Current (nA)")
         plt.ylabel("Number of Spikes")
         plt.legend(loc="upper left")
         fig3.savefig('figures/op-output/fivsfi_%s.png' % self.flag)
 
 
-op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL', 'MSE')
+op_c = optimizeparams(gc, free_params, rawhc, 'HC', 'LITM', 'MSE')
 op_c.return_summarydata()
 
-# op_li = optimizeparams(gc, free_params, rawhc, 'HC', 'LITM','Area')
-# op_li.return_summarydata()
+#op_lr_ctrl = optimizeparams(gc, free_params, rawnr, 'NR', 'LITM', 'MSE')
+#op_lr_ctrl.return_summarydata()
 
-# op_lr_ctrl = optimizeparams(gc, free_params, rawnr, 'NR', 'CTRL', 'PCM')
-# op_lr_ctrl.return_summarydata()
-
-# op_lr_litm = optimizeparams(gc, free_params, rawlr, 'LR', 'LITM', 'DTW')
-# op_lr_litm.return_summarydata()
+#op_lr_litm = optimizeparams(gc, free_params, rawlr, 'LR', 'CTRL', 'MSE')
+#op_lr_litm.return_summarydata()
