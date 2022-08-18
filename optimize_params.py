@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib
+
 # nicer font options:
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
@@ -9,33 +10,38 @@ matplotlib.rcParams.update({'font.size': 12})
 
 matplotlib.use('Agg')  # hopefully this works over ssh
 import matplotlib.pyplot as plt
-import pylab
 from random import Random  # TODO replace with numpy rand f'n.  pseudorandom number generation
 from inspyred import ec  # evolutionary algorithm
 from netpyne import specs, sim  # neural network design and simulation
 from clamps import IClamp
+from clamps_noise import ICNoise
 from find_rheobase import ElectrophysiologicalPhenotype
-from scipy.signal import find_peaks
-from tabulate import tabulate
 from FI_fromdata import extractFI
 import similaritymeasures
+import random
 
 netparams = specs.NetParams()
 
+
 # import granule cell info from hoc
-gc = netparams.importCellParams(
-    label='GC',
-    conds={"cellType": "GranuleCell", "cellModel": "GranuleCell"},
-    fileName="objects/GC.hoc",
-    cellName="GranuleCell",
-    cellArgs=[1],
-    importSynMechs=False
-)
+def importgc():
+    gc = netparams.importCellParams(
+        label='GC',
+        conds={"cellType": "GranuleCell", "cellModel": "GranuleCell"},
+        fileName="objects/GC.hoc",
+        cellName="GranuleCell",
+        cellArgs=[1],
+        importSynMechs=False
+    )
+    return gc
+
 
 # parameters to be optimized
 free_params = {
     'bk': ['gkbar'],  # big conductance, calcium-activated potassium channel
-    'ichan2': ['gnatbar', 'gkfbar', 'gksbar', 'gl'], # KDR channel conductances, sodium conductance
+    'ichan2': ['gnatbar', 'vshiftma', 'vshiftmb', 'vshiftha', 'vshifthb', 'vshiftnfa', 'vshiftnfb', 'vshiftnsa',
+               'vshiftnsb',
+               'gkfbar', 'gksbar', 'gl'],  # KDR channel conductances, sodium conductance
     'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
     'kir': ['gkbar'],  # inward rectifier potassium (Kir) channel
     'km': ['gbar'],  # KM channel
@@ -60,7 +66,7 @@ class optimizeparams(object):
                  condition,  # str , either 'CTRL' or 'LITM'
                  difference_method,  # str options: 'Area', 'Frechet', 'DTW', 'PCM', 'MSE', 'CL'
                  pop_size=10,
-                 max_evaluations=150,
+                 max_evaluations=100,
                  num_selected=10,
                  mutation_rate=0.03,
                  num_elites=1,
@@ -78,7 +84,7 @@ class optimizeparams(object):
         self.initialParams = []
         self.minParamValues = []
         self.maxParamValues = []
-        self.num_inputs = 12
+        self.num_inputs = 20
         self.free_params = free_params
         self.pop_size = pop_size
         self.max_evaluations = max_evaluations
@@ -88,10 +94,16 @@ class optimizeparams(object):
         self.targetRate = targetRate
         self.flag = str(self.population + '_' + self.condition + '_' + self.difference_method)
         self.n_stimcells = 10
+        self.noiselvl = random.uniform(0.8, 1)
+        self.weight = 0.0001  # random.uniform(0.01, 0.1)
 
-    def curr_inj(self, current, delay=0, duration=1000):
-        iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
-        res = iclamp(current)
+    def curr_inj(self, current, delay=0, duration=1000, noise=False):
+        if noise:
+            iclamp = ICNoise(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
+            res = iclamp(current, self.noiselvl, self.weight)
+        else:
+            iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
+            res = iclamp(current)
         return res
 
     def retrieve_baseline_params(self):
@@ -103,9 +115,9 @@ class optimizeparams(object):
 
         return self.baseline
 
-    def sim_fi(self):
-        ep = ElectrophysiologicalPhenotype(self.cell_dict)
-        self.simfi = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=2000)
+    def sim_fi(self, noise):
+        ep = ElectrophysiologicalPhenotype(self.cell_dict, noise=noise)
+        self.simfi = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
         return self.simfi
 
     def data_fi(self):
@@ -127,19 +139,27 @@ class optimizeparams(object):
             # TODO find way to use free_params here to remove this ugly situation
             self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] = cand[0]
             self.cell_dict['secs']['soma']['mechs']['ichan2']['gnatbar'] = cand[1]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gkfbar'] = cand[2]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gksbar'] = cand[3]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gl'] = cand[4]
-            self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = cand[5]
-            self.cell_dict['secs']['soma']['mechs']['kir']['gkbar'] = cand[6]
-            self.cell_dict['secs']['soma']['mechs']['km']['gbar'] = cand[7]
-            self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = cand[8]
-            self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = cand[9]
-            self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[10]
-            self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[11]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftma'] = cand[2]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftmb'] = cand[3]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftha'] = cand[4]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshifthb'] = cand[5]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfa'] = cand[6]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfb'] = cand[7]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsa'] = cand[8]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsb'] = cand[9]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['gkfbar'] = cand[10]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['gksbar'] = cand[11]
+            self.cell_dict['secs']['soma']['mechs']['ichan2']['gl'] = cand[12]
+            self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = cand[13]
+            self.cell_dict['secs']['soma']['mechs']['kir']['gkbar'] = cand[14]
+            self.cell_dict['secs']['soma']['mechs']['km']['gbar'] = cand[15]
+            self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = cand[16]
+            self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = cand[17]
+            self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[18]
+            self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[19]
 
             FI_data = self.data_fi()
-            FI_sim = self.sim_fi().to_numpy()
+            FI_sim = self.sim_fi(noise=False).to_numpy()
 
             if self.difference_method == "Area":
                 fitness = abs(similaritymeasures.area_between_two_curves(FI_data, FI_sim))
@@ -162,10 +182,17 @@ class optimizeparams(object):
         rand = Random()
         rand.seed()  # will take current time as seed
 
-        normal_vals = [0.0006, 0.12, 0.016, 0.006, 1.44e-05, 0.012, 0.0, 0.001, 0.005,
-                       0.002, 0.001, 3.7e-5]  # consistent with hoc file, removed HT, LT, GABA-A, Kir initialized to 0, so will stay 0
-        self.minParamValues = list(np.array(normal_vals) * 0.2)  # allow min vals to be 80% lower
-        self.maxParamValues = list(np.array(normal_vals) * 1.8)  # allow max vals to be 80% higher
+        normal_vals = [0.0006, 0.12, 43.0, 15.0, 65.0, 12.5, 18.0, 43.0, 30.0, 55.0, 0.016, 0.006, 1.44e-05, 0.012, 0.0,
+                       0.001, 0.005, 0.002, 0.001, 3.7e-5]
+        # consistent with hoc file, removed HT, LT, GABA-A, Kir initialized to 0, so will stay 0
+        # self.minParamValues = list(np.array(normal_vals) * 0.2)  # allow min vals to be 80% lower
+        # self.maxParamValues = list(np.array(normal_vals) * 1.8)  # allow max vals to be 80% higher
+
+        self.minParamValues = [0.00012, 0.024, 39.99, 13.95, 60.45, 11.625, 12.0, 35.0, 25.0, 50.0, 0.0032, 0.0012,
+                               0.00000288, 0.0024, 0, 0.0002, 0.001, 0.0004, 0.0002, 0.0000074]
+
+        self.maxParamValues = [0.00108, 0.216, 46.01, 16.05, 79.55, 15.0, 25.0, 50.0, 40.0, 60.0, 0.0288, 0.0108,
+                               0.00002592, 0.0216, 0, 0.0018, 0.009, 0.0036, 0.0018, 0.0000666]
 
         self.gc_ec = ec.EvolutionaryComputation(rand)
         self.gc_ec.selector = ec.selectors.truncation_selection  # truncation selection is purely deterministic. Choses param populations based on absol fitness
@@ -201,20 +228,25 @@ class optimizeparams(object):
     def build_optimizedcell(self, currentval=0.33):
         j = 0
         for key in self.free_params.keys():
+            # for j, val in zip(range(0,len(self.bestCand)), self.free_params[key]):
             for val in self.free_params[key]:
                 self.cell_dict['secs']['soma']['mechs'][key][val] = self.bestCand[j]
                 j = j + 1
         finalclamp = self.curr_inj(currentval)
-        self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
+        # self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
         return finalclamp
 
     def revert_to_baseline(self):
-        baseline = self.retrieve_baseline_params()
+        # TODO: fix this. Doesn't seem to do anything currently.
         j = 0
         for key in self.free_params.keys():
+            # for j, val in zip(range(0,len(self.bestCand)), self.free_params[key]):
             for val in self.free_params[key]:
-                self.cell_dict['secs']['soma']['mechs'][key][val] = baseline[j]
+                self.cell_dict['secs']['soma']['mechs'][key][val] = self.baseline[j]
                 j = j + 1
+        clamptobuild = self.curr_inj(0.33)
+        # self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
+        return clamptobuild
 
     def store_fis(self):
         baselineparams = self.retrieve_baseline_params()
@@ -224,7 +256,7 @@ class optimizeparams(object):
             newparams = self.find_bestcandidate()
             newparamdf = pd.DataFrame({"Cell_%s" % cell_n: newparams})
             self.build_optimizedcell()
-            newcellfi = self.sim_fi()
+            newcellfi = self.sim_fi(noise=False)
             self.sim_fi_store = pd.concat([newcellfi, self.sim_fi_store])
             self.param_store = pd.concat([self.param_store, newparamdf], axis=1)
             self.revert_to_baseline()
@@ -246,7 +278,7 @@ class optimizeparams(object):
     def return_summarydata(self):
         currentvals = np.linspace(0, 0.33, 12)
         baselineparams = self.retrieve_baseline_params()
-        baselinecellfi = self.sim_fi().to_numpy()
+        baselinecellfi = self.sim_fi(noise=False).to_numpy()
         exp_fi = self.data_fi()
         avg_fi = self.compute_avgFI()
 
@@ -259,58 +291,45 @@ class optimizeparams(object):
         plt.legend(loc="upper left")
         fig1.savefig('figures/op-output/fivsfi_simavg_%s.pdf' % self.flag)
 
-        '''
+        self.revert_to_baseline()
+
         fig2, axis = plt.subplots(12, 1)
-        j = 0
-        for currentval in currentvals:
-            baselinecell = self.curr_inj(currentval)
-            axis[j].plot(baselinecell['t'], baselinecell['V'], color='0.0', label='$%.2f nA$' % currentval)
-            box = axis[j].get_position()
-            axis[j].set_position([box.x0, box.y0, box.width * 0.7, box.height])
-            axis[j].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            axis[j].yaxis.set_visible(False)
-            j = j + 1
-        fig2.supxlabel('Time (ms)')
-        fig2.supylabel('Membrane Potential')
-        fig2.suptitle('Baseline: %s' % self.flag)
-        fig2.savefig('figures/op-output/baseline_%s.pdf' % self.flag)
-        plt.close(fig2)
-
-        newparams = self.find_bestcandidate()
-        newcell = self.build_optimizedcell()
-        newcellfi = self.sim_fi()
-
-        fig3, axis = plt.subplots(12, 1)
         i = 0
         for currentval in currentvals:
-            newcell = self.curr_inj(currentval)
+            newcell = self.curr_inj(currentval, noise=True)
             axis[i].plot(newcell['t'], newcell['V'], color='0.0', label='$%.2f nA$' % currentval)
             box = axis[i].get_position()
             axis[i].set_position([box.x0, box.y0, box.width * 0.7, box.height])
             axis[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
             axis[i].yaxis.set_visible(False)
             i = i + 1
-        fig3.supxlabel('Time (ms)')
-        fig3.supylabel('Membrane Potential')
-        fig3.suptitle('Optimized: %s' % self.flag)
-        fig3.savefig('figures/op-output/optimized_%s.pdf' % self.flag)
-        plt.close(fig3)
-        '''
+        fig2.supxlabel('Time (ms)')
+        fig2.supylabel('Membrane Potential')
+        fig2.suptitle('Optimized: %s' % self.flag)
+        fig2.savefig('figures/op-output/optimized_%s.pdf' % self.flag)
+        plt.close(fig2)
 
+
+gc = importgc()  # re-loading to ensure baseline params are the same each time
 op_hcc = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL', 'MSE')
 op_hcc.return_summarydata()
 
-op_hcl = optimizeparams(gc, free_params, rawhc, 'HC', 'LITM', 'MSE')
+gc1 = importgc()
+op_hcl = optimizeparams(gc1, free_params, rawhc, 'HC', 'LITM', 'MSE')
 op_hcl.return_summarydata()
 
-op_lrc = optimizeparams(gc, free_params, rawlr, 'LR', 'CTRL', 'MSE')
+gc2 = importgc()
+op_lrc = optimizeparams(gc2, free_params, rawlr, 'LR', 'CTRL', 'MSE')
 op_lrc.return_summarydata()
 
-op_lrl = optimizeparams(gc, free_params, rawlr, 'LR', 'LITM', 'MSE')
+gc3 = importgc()
+op_lrl = optimizeparams(gc3, free_params, rawlr, 'LR', 'LITM', 'MSE')
 op_lrl.return_summarydata()
 
-op_nrc = optimizeparams(gc, free_params, rawnr, 'NR', 'CTRL', 'MSE')
+gc4 = importgc()
+op_nrc = optimizeparams(gc4, free_params, rawnr, 'NR', 'CTRL', 'MSE')
 op_nrc.return_summarydata()
 
-op_nrl = optimizeparams(gc, free_params, rawnr, 'NR', 'LITM', 'MSE')
+gc5 = importgc()
+op_nrl = optimizeparams(gc5, free_params, rawnr, 'NR', 'LITM', 'MSE')
 op_nrl.return_summarydata()

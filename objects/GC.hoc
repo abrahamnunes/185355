@@ -148,6 +148,15 @@ begintemplate GranuleCell
             insert LT
                 gbar_LT = gbar_lt_
             Ra=Ra_fit_
+            insert ichan2
+                vshiftma_ichan2 = 43                            // value Yim et al. 2015
+                vshiftmb_ichan2 = 15                            // value Yim et al. 2015
+                vshiftha_ichan2 = 65                            // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18                          // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43                          // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30                          // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55                          // value Yim et al. 2015
         }
 
         soma {insert ichan2  						

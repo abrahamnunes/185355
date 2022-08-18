@@ -18,6 +18,7 @@ mkdir figures/op-output
 nrnivmodl mods
 #nrniv main.hoc
 python optimize_params.py
+python computefoldchange.py
 #if wanting to run using Rosetta
 #arch -arch x86_64 nrnivmodl mods
 #arch -arch x86_64 nrniv main.hoc

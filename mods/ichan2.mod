@@ -72,7 +72,8 @@ NONSPECIFIC_CURRENT il, igabaa 				: leak current
 : range variable definition block,
 : i.e. variables that might change with space along a compartment / could be declared global in this case
 RANGE gnatbar, gkfbar, gksbar				: gbar values for Na, K(slow/fast)
-RANGE gl, el, ina, ik, il, ggabaa, igabaa, egabaa	: gbar and reversal poti for leak current	
+RANGE gl, el, ina, ik, il, ggabaa, igabaa, egabaa	: gbar and reversal poti for leak current
+RANGE vshiftma, vshiftmb, vshiftha, vshifthb, vshiftnfa, vshiftnfb, vshiftnsa, vshiftnsb   : params for shifting Na and K (in)activation curves
 }
 
 : The INDEPENDENT statement was omitted; INDEPENDENT statements are irrelevant to NEURON. http://www.neuron.yale.edu/phpbb/viewtopic.php?f=16&t=2351 
@@ -87,10 +88,19 @@ PARAMETER {
 
     gnatbar (mho/cm2)   				: Na (gbar and reversal poti)
     ena  	(mV)	
-		
+	vshiftma   (mV)                  : (to allow for fitting) shift m channel activation curve
+    vshiftmb   (mV)                  : (to allow for fitting) shift m channel activation curve
+    vshiftha   (mV)                  : (to allow for fitting) shift h channel inactivation curve
+    vshifthb   (mV)                  : (to allow for fitting) shift h channel inactivation curve
+
 	gkfbar 	(mho/cm2)				: K  (gbar(slow/fast), reversal is ek)
+    vshiftnfa   (mV)                  : (to allow for fitting) shift fast potassium channel activation curve
+    vshiftnfb   (mV)                  : (to allow for fitting) shift fast potassium channel activation curve
+
 	gksbar = 0 (mho/cm2)	                        : init to 0 (not included in BC, HIPP and MC) <ah>
-    ek     	(mV)                      
+    ek     	(mV)
+    vshiftnsa   (mV)                  : (to allow for fitting) shift slow potassium channel activation curve
+    vshiftnsb   (mV)                  : (to allow for fitting) shift slow potassium channel activation curve
 
 	gl 	(mho/cm2)    				: leak (gbar and reversal poti)
  	el 	(mV)
@@ -182,29 +192,29 @@ PROCEDURE rates(v) {
     q10 = 3^((celsius - 6.3)/10)
 
     :"m" sodium activation system - act and inact cross at -40	: shifted by 68mV compared to in Aradi 1999/2002
-	alpha = -0.3*vtrap((v+60-17),-5)		: in Aradi 1999: alpha = -0.3*vtrap((v-25),-5); in Aradi 2002: alpha = 0.3*vtrap((v-25),-5) <ah>
-	beta = 0.3*vtrap((v+60-45),5)			: in Aradi 1999: beta = 0.3*vtrap((v-53),5);  in Aradi 2002:  beta = -0.3*vtrap((v-53),5) <ah>
+	alpha = -0.3*vtrap((v+vshiftma),-5)		: in Aradi 1999: alpha = -0.3*vtrap((v-25),-5); in Aradi 2002: alpha = 0.3*vtrap((v-25),-5) <ah>
+	beta = 0.3*vtrap((v+vshiftmb),5)			: in Aradi 1999: beta = 0.3*vtrap((v-53),5);  in Aradi 2002:  beta = -0.3*vtrap((v-53),5) <ah>
 	sum = alpha+beta        
 	mtau = 1/sum      
     minf = alpha/sum
     
     :"h" sodium inactivation system		    : shifted by 68mV compared to in Aradi 1999/2002
-	alpha = 0.23/exp((v+60+5)/20)			: in Aradi 1999/2002:  alpha = 0.23/exp((v-3)/20) <ah>
-	beta = 3.33/(1+exp((v+60-47.5)/-10))	: in Aradi 1999/2002:  beta = 3.33/(1+exp((v-55.5)/-10)) <ah>
+	alpha = 0.23/exp((v+vshiftha)/20)			: in Aradi 1999/2002:  alpha = 0.23/exp((v-3)/20) <ah>
+	beta = 3.33/(1+exp((v+vshifthb)/-10))	: in Aradi 1999/2002:  beta = 3.33/(1+exp((v-55.5)/-10)) <ah>
 	sum = alpha+beta
 	htau = 1/sum 
     hinf = alpha/sum 
 
     :"ns" sKDR activation system		    : shifted by 65mV compared to Aradi 1999 <ah>
-    alpha = -0.028*vtrap((v+65-35),-6)		: in Aradi 1999: alpha = -0.028*vtrap((v-35),-6) 
-	beta = 0.1056/exp((v+65-10)/40)			: in Aradi 1999: beta = 0.1056/exp((v-10)/40)   
+    alpha = -0.028*vtrap((v+vshiftnsa),-6)		: in Aradi 1999: alpha = -0.028*vtrap((v-35),-6)
+	beta = 0.1056/exp((v+vshiftnsb)/40)			: in Aradi 1999: beta = 0.1056/exp((v-10)/40)
 	sum = alpha+beta        			
 	nstau = 1/sum      
     nsinf = alpha/sum		
     
     :"nf" fKDR activation system		    : shifted by 65mV compared to Aradi 1999/2002 <ah>
-    alpha = -0.07*vtrap((v+65-47),-6)		: in Aradi 1999: alpha = -0.07*vtrap((v-47),-6); in Aradi 2002: alpha = 0.07*vtrap((v-47),-6) <ah>
-	beta = 0.264/exp((v+65-22)/40)			: in Aradi 1999/2002: beta = 0.264/exp((v-22)/40)  // probably typo in Aradi & Soltez 2002 there: beta = 0.264/exp((v-22)/4) <ah>
+    alpha = -0.07*vtrap((v+vshiftnfa),-6)		: in Aradi 1999: alpha = -0.07*vtrap((v-47),-6); in Aradi 2002: alpha = 0.07*vtrap((v-47),-6) <ah>
+	beta = 0.264/exp((v+vshiftnfb)/40)			: in Aradi 1999/2002: beta = 0.264/exp((v-22)/40)  // probably typo in Aradi & Soltez 2002 there: beta = 0.264/exp((v-22)/4) <ah>
 	sum = alpha+beta        
 	nftau = 1/sum      
     nfinf = alpha/sum
