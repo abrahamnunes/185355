@@ -157,6 +157,14 @@ begintemplate GranuleCell
                 vshiftnfb_ichan2 = 43                          // value Yim et al. 2015
                 vshiftnsa_ichan2 = 30                          // value Yim et al. 2015
                 vshiftnsb_ichan2 = 55                          // value Yim et al. 2015
+                cshift_ama_ichan2 = -0.3
+                cshift_amb_ichan2 = -5
+                cshift_bma_ichan2 = 0.3
+                cshift_bmb_ichan2 = 5
+                cshift_aha_ichan2 = 0.23
+                cshift_ahb_ichan2 = 20
+                cshift_bha_ichan2 = 3.33
+                cshift_bhb_ichan2 = -10
         }
 
         soma {insert ichan2  						
@@ -278,7 +286,7 @@ begintemplate GranuleCell
                 bt_kir          =       bt_kir_fit_
                 ggabaa_ichan2 	= 	ggabaabar_fit_		// added GabaA in Yim et al. 2015 <ah> 
                 egabaa_ichan2 	= 	e_gabaa_		// reversal potential GABAA added in Yim et al. 2015 <ah>
-                ena 		    = 	50		        // ena was unified from enat=55 (BC, HIPP, MC) and enat=45 (GC) in Santhakumar et al. (2005) <ah>
+                ena 		    = 	50	        // ena was unified from enat=55 (BC, HIPP, MC) and enat=45 (GC) in Santhakumar et al. (2005) <ah>
                 ek		        =	-90		        // simplified ekf=eks=ek=esk; note the eK was erroneously reported as -105mV in the Yim et al. 2015 <ah>
                 cao_ccanl	    =	2 }
 } // end of gctemp()
@@ -293,7 +301,7 @@ begintemplate GranuleCell
     // Define synapses on to GCs using 
     //- an Exp2Syn object (parameters tau1 -rise, tau2 -decay, 
     // time constant [ms] and e - rev potential [mV]
-    // delay [ms] and weight -variablr betw 0 and 1 [1 corresponding to 1 'S]
+    // delay [ms] and weight -variable betw 0 and 1 [1 corresponding to 1 'S]
 
     proc synapse() {
         gcdend1[3] syn = new Exp2Syn(0.5) // PP syn based on data from Greg Hollrigel and Kevin Staley   <AH> NOTE: both synapses are identical!

@@ -10,17 +10,24 @@ matplotlib.rcParams.update({'font.size': 12})
 
 matplotlib.use('Agg')  # hopefully this works over ssh
 import matplotlib.pyplot as plt
-from random import Random  # TODO replace with numpy rand f'n.  pseudorandom number generation
+from random import Random
 from inspyred import ec  # evolutionary algorithm
 from netpyne import specs, sim  # neural network design and simulation
 from clamps import IClamp
-from clamps_noise import ICNoise
 from find_rheobase import ElectrophysiologicalPhenotype
-from FI_fromdata import extractFI
-import similaritymeasures
+from CurvesFromData import extractFI, extractIV
+from IVdata import IVdata
 import random
 
 netparams = specs.NetParams()
+
+# TODO: add docstrings to class and methods
+
+"""IMPORTS used by optimizeparams 
+    gc: import granule cell from NEURON .hoc file 
+    free_params: parameters of interest to be optimized
+    raw_: imported csv to DataFrame objects containing raw data in long-table format 
+"""
 
 
 # import granule cell info from hoc
@@ -40,8 +47,8 @@ def importgc():
 free_params = {
     'bk': ['gkbar'],  # big conductance, calcium-activated potassium channel
     'ichan2': ['gnatbar', 'vshiftma', 'vshiftmb', 'vshiftha', 'vshifthb', 'vshiftnfa', 'vshiftnfb', 'vshiftnsa',
-               'vshiftnsb',
-               'gkfbar', 'gksbar', 'gl'],  # KDR channel conductances, sodium conductance
+               'vshiftnsb', 'cshift_ama', 'cshift_amb', 'cshift_bma', 'cshift_bmb', 'cshift_aha', 'cshift_ahb',
+               'cshift_bha', 'cshift_bhb', 'gkfbar', 'gksbar', 'gl'],  # sodium, potassium parameters
     'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
     'kir': ['gkbar'],  # inward rectifier potassium (Kir) channel
     'km': ['gbar'],  # KM channel
@@ -52,61 +59,78 @@ free_params = {
 }
 
 # import raw data
-rawhc = pd.read_csv("rawdata/HC_FI.csv")
-rawlr = pd.read_csv("rawdata/LR_FI.csv")
-rawnr = pd.read_csv("rawdata/NR_FI.csv")
+rawhc = pd.read_csv("rawdata/HC_FI.csv")  # healthy control IFs
+rawlr = pd.read_csv("rawdata/LR_FI.csv")  # lithium responder IFs
+rawnr = pd.read_csv("rawdata/NR_FI.csv")  # lithium non-responder IFs
+rawhciv = pd.read_csv("rawdata/HC_NaK_long.csv")  # healthy control IVs
+rawlriv = pd.read_csv("rawdata/LR_NaK_long.csv")  # lithium responder IVs
+rawnriv = pd.read_csv("rawdata/NR_NaK_long.csv")  # lithium non-responder IVs
 
 
 class optimizeparams(object):
+    """
+    This object uses an evolutionary algorithm to optimize the parameters of a biophysical neuronal model of a
+    hippocampal granule cell to frequency-current (FI) and current-voltage (IV) curves from iPSC-derived granule cells.
+
+    Arguments
+
+        cell: 'dict'. Model parameters imported from NEURON .hoc file
+        free_params: 'dict'. Parameters to be optimized
+        freqdata: 'DataFrame'. FI curve data imported from csv
+        currdata: 'DataFrame'. IV curve data imported from csv (Na, Kfast and Kslow currents)
+        population: 'str'. Participant group. Can be either: 'HC' or 'LR' or 'NR'
+        condition: 'str'. Experimental condition. Can be either: 'CTRL' or 'LITM'
+        pop_size: 'int', optional. Number of parameter sets per evaluation. Default = 10
+        max_evaluations: 'int', optional. Terminate evolutionary iterations after max_evaluations. Default = 100
+        num_selected: 'int', optional. Indicates how many parameter sets are selected for next evol'n iteration. Default = 10
+        mutation_rate: 'float', optional. Rate of mutation of parameters. Default = 0.03
+
+    Output
+        Results from optimization algorithm: saved as .csv and .pdf figures in the folders 'data/parameters' and
+        'figures/op-output'.
+    """
+
     def __init__(self,
                  cell,
                  free_params,
-                 celldata,
+                 freqdata,  # FI data from iPSC
+                 currdata,  # IV data from iPSC
                  population,  # str, either 'HC', 'LR', 'NR'
                  condition,  # str , either 'CTRL' or 'LITM'
-                 difference_method,  # str options: 'Area', 'Frechet', 'DTW', 'PCM', 'MSE', 'CL'
                  pop_size=10,
                  max_evaluations=100,
                  num_selected=10,
                  mutation_rate=0.03,
-                 num_elites=1,
-                 targetRate=12,
-                 # current=0.33
                  ):
 
         self.cell_dict = {"secs": cell["secs"]}
         self.baseline_dict = {"secs": cell["secs"]}
         self.free_params = free_params
-        self.FI_curve = celldata
+        self.FI_curve = freqdata
+        self.IV_curve = currdata
         self.condition = condition
         self.population = population
-        self.difference_method = difference_method
         self.initialParams = []
         self.minParamValues = []
         self.maxParamValues = []
-        self.num_inputs = 20
+        self.num_inputs = len(sum(self.free_params.values(), []))
         self.free_params = free_params
         self.pop_size = pop_size
         self.max_evaluations = max_evaluations
         self.num_selected = num_selected
         self.mutation_rate = mutation_rate
-        self.num_elites = num_elites
-        self.targetRate = targetRate
-        self.flag = str(self.population + '_' + self.condition + '_' + self.difference_method)
-        self.n_stimcells = 10
-        self.noiselvl = random.uniform(0.8, 1)
-        self.weight = 0.0001  # random.uniform(0.01, 0.1)
+        self.num_elites = 1
+        self.flag = str(self.population + '_' + self.condition)
+        self.n_simcells = 1  # number of simulated cells
 
-    def curr_inj(self, current, delay=0, duration=1000, noise=False):
-        if noise:
-            iclamp = ICNoise(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
-            res = iclamp(current, self.noiselvl, self.weight)
-        else:
-            iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
-            res = iclamp(current)
-        return res
+        self.plot_results()  # run optimization upon class instantiation
 
     def retrieve_baseline_params(self):
+        """ Saves baseline parameters from cell_dict
+
+        Returns:
+            'list'. List of baseline parameter values.
+        """
         self.baseline = []
         for key in self.free_params.keys():
             for val in self.free_params[key]:
@@ -115,221 +139,328 @@ class optimizeparams(object):
 
         return self.baseline
 
+    def curr_inj(self, current, delay=0, duration=1000):
+        """Injects current, returns number of action potentials
+
+        Parameters:
+
+            current : 'float'. Current at which membrane is clamped to [nA]
+            delay : 'float', optional. Time after recording starts when current is clamped [ms]. The default is 0.
+            duration : 'float', optional. Total duration of simulation [ms]. The default is 1000.
+
+        Returns:
+            'dict'. Results of current clamp.
+
+        """
+        iclamp = IClamp(self.cell_dict, noise=False, delay=delay, duration=duration, T=duration + delay * 2)
+        res = iclamp(current)
+        return res
+
     def sim_fi(self, noise):
+        """Computes simulated FI curve, and stores the raw data
+
+        Parameters:
+            noise: 'bool'. Indicate whether to include background noise.
+
+        Returns:
+            'pandas.DataFrame'. Simulated FI curve.
+        """
         ep = ElectrophysiologicalPhenotype(self.cell_dict, noise=noise)
         self.simfi = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
         return self.simfi
 
     def data_fi(self):
-        efi = extractFI(self.FI_curve, self.condition)
-        self.avgFI = efi.averageFI()
+        """ Computes the average FI curve and accompanying SEM from imported iPSC data
+
+        Returns:
+            'ndarray'
+        """
+        self.avgFI = extractFI(self.FI_curve, self.condition).averageFI()
         return self.avgFI
 
+    def sim_iv(self):
+        """Computes simulated IV curves for Na and K currents, and stores results
+
+        Returns:
+            'pandas.DataFrame'. Simulated IV curves for Na and K currents.
+        """
+        iv = IVdata(self.cell_dict)  # instantiate class
+        self.simiv = iv.compute_ivdata(vlow=-70, vhigh=20, n_steps=10, delay=10, duration=5)
+        return self.simiv
+
+    def data_iv(self):
+        """ Computes the average IV curves for Na, Kfast and Kslow currents and accompanying SEM from imported iPSC data
+
+        Returns:
+            'ndarray'
+        """
+        self.avgIV = extractIV(self.IV_curve, self.condition).averageIV()
+        return self.avgIV
+
     def generate_netparams(self, random, args):
+        """
+        Initialize set of random initial parameter values selected from uniform distribution within min-max bounds.
+
+        Returns
+            'list'. initialParams
+        """
         self.initialParams = [random.uniform(self.minParamValues[i], self.maxParamValues[i]) for i in
                               range(self.num_inputs)]
-        self.initialParams
         return self.initialParams
 
-    # design fitness function, used in the ec evolve function --> final_pop = my_ec.evolve(...,evaluator=evaluate_netparams,...)
     def evaluate_netparams(self, candidates, args):
+        """
+        Fitness function that evaluates the fitness of candidate parameters by quantifying the difference between
+        simulated FI and IV curves to the FI and IV curves from data using mean squared error.
+
+        Returns
+            'list'. Fitness values for sets of candidates
+        """
         self.fitnessCandidates = []
 
-        for icand, cand in enumerate(candidates):
-            # TODO find way to use free_params here to remove this ugly situation
-            self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] = cand[0]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gnatbar'] = cand[1]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftma'] = cand[2]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftmb'] = cand[3]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftha'] = cand[4]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshifthb'] = cand[5]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfa'] = cand[6]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfb'] = cand[7]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsa'] = cand[8]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsb'] = cand[9]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gkfbar'] = cand[10]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gksbar'] = cand[11]
-            self.cell_dict['secs']['soma']['mechs']['ichan2']['gl'] = cand[12]
-            self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = cand[13]
-            self.cell_dict['secs']['soma']['mechs']['kir']['gkbar'] = cand[14]
-            self.cell_dict['secs']['soma']['mechs']['km']['gbar'] = cand[15]
-            self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = cand[16]
-            self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = cand[17]
-            self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = cand[18]
-            self.cell_dict['secs']['soma']['mechs']['tca']['gcatbar'] = cand[19]
-
+        for cand in candidates:
+            i = 0
+            for k in free_params.keys():
+                for v in free_params[k]:
+                    self.cell_dict['secs']['soma']['mechs'][k][v] = cand[i]
+                    i += 1
             FI_data = self.data_fi()
             FI_sim = self.sim_fi(noise=False).to_numpy()
+            IV_data = self.data_iv()
+            IV_sim = self.sim_iv().to_numpy()
 
-            if self.difference_method == "Area":
-                fitness = abs(similaritymeasures.area_between_two_curves(FI_data, FI_sim))
-            elif self.difference_method == "Frechet":
-                fitness = abs(similaritymeasures.frechet_dist(FI_data, FI_sim))
-            elif self.difference_method == "CL":  # curve length (i.e., arc-length)
-                fitness = abs(similaritymeasures.curve_length_measure(FI_data, FI_sim))
-            elif self.difference_method == "PCM":  # partial curve mapping
-                fitness = abs(similaritymeasures.pcm(FI_data, FI_sim))
-            elif self.difference_method == "DTW":  # dynamic time warping
-                fitness = abs(similaritymeasures.dtw(FI_data, FI_sim)[0])
-            elif self.difference_method == "MSE":  # for sim fi with 12 steps
-                fitness = np.sum([((x1 - x2) ** 2) for (x1, x2) in zip(FI_data[:, 1], FI_sim[:, 1])]) / 12
+            ficurves = np.sum([((x1 - x2) ** 2) for (x1, x2) in zip(FI_data[:, 1], FI_sim[:, 1])]) / len(FI_data[:, 1])
+            na_currs = np.sum([((x1 - x2) ** 2) for (x1, x2) in zip(IV_data[:, 1], IV_sim[:, 1])]) / len(IV_data[:, 1])
+            k_currs = np.sum(
+                [((x1 - x2) ** 2) for (x1, x2) in zip((IV_data[:, 3] + IV_data[:, 5]), IV_sim[:, 2])]) / len(
+                IV_data[:, 1])
+
+            fitness = (na_currs + k_currs + ficurves) / 3
 
             self.fitnessCandidates.append(fitness)
 
         return self.fitnessCandidates
 
     def find_bestcandidate(self):
+        """
+        Sets up custom evolutionary computation and returns list of optimized parameters.
+
+        Components of EC
+            gc_ec : instantiate evolutionary computation with random.Random object
+            selector: method used to select best candidate based on fitness value
+            variator: method used to determine how mutations (variations) are made to each generation of params
+            replacer: method used to determine if/how individuals are replaced in pool of candidates after selection
+            terminator: method used to specify how to terminate evolutionary algorithm
+            observer: method that allows for supervision of evolutionary computation across all evaluations
+            evolve: pulls together all components of custom algorithm, iteratively calls evaluate_netparams, returns
+                    parameters that minimize fitness function.
+
+        Returns
+            'list'. bestCand (list of optimized parameters)
+        """
+
+        # TODO: Potentially write custom variator function to be compatible with np.random.RandomState
+        # rand = np.random.RandomState(self.setseed)
+
         rand = Random()
-        rand.seed()  # will take current time as seed
+        rand.seed(self.setseed)  # will take cell # as seed (i.e., simulate 1 cell, seed will be 1).
 
-        normal_vals = [0.0006, 0.12, 43.0, 15.0, 65.0, 12.5, 18.0, 43.0, 30.0, 55.0, 0.016, 0.006, 1.44e-05, 0.012, 0.0,
-                       0.001, 0.005, 0.002, 0.001, 3.7e-5]
-        # consistent with hoc file, removed HT, LT, GABA-A, Kir initialized to 0, so will stay 0
-        # self.minParamValues = list(np.array(normal_vals) * 0.2)  # allow min vals to be 80% lower
-        # self.maxParamValues = list(np.array(normal_vals) * 1.8)  # allow max vals to be 80% higher
+        # SET UP MIN/MAX BOUNDS FOR PARAMETERS ------------------
+        # TODO: find cleaner way of dealing with these lists, allow for easier modification
+        # TODO: pilot with different min/max bounds to improve fit of IV curves.
 
-        self.minParamValues = [0.00012, 0.024, 39.99, 13.95, 60.45, 11.625, 12.0, 35.0, 25.0, 50.0, 0.0032, 0.0012,
-                               0.00000288, 0.0024, 0, 0.0002, 0.001, 0.0004, 0.0002, 0.0000074]
+        self.minParamValues = [0.00012, 0.024, 39.99, 13.95, 50, 0, 12.0, 35.0, 25.0, 50.0, (-0.3 * 0.2), (-5 * 0.2),
+                               (0.3 * 0.2), (5 * 0.2), (0.23 * 0.2), (20 * 0.2), (3.33 * 0.2), (-10 * 0.2), 0.0032,
+                               0.0012, 0.00000288, 0.0024, 0, 0.0002, 0.001, 0.0004, 0.0002, 0.0000074]
 
-        self.maxParamValues = [0.00108, 0.216, 46.01, 16.05, 79.55, 15.0, 25.0, 50.0, 40.0, 60.0, 0.0288, 0.0108,
-                               0.00002592, 0.0216, 0, 0.0018, 0.009, 0.0036, 0.0018, 0.0000666]
+        self.maxParamValues = [0.00108, 4, 46.01, 16.05, 90, 25, 25.0, 50.0, 40.0, 60.0, (-0.3 * 1.8), (-5 * 1.8),
+                               (0.3 * 1.8), (5 * 1.8), (0.23 * 1.8), (20 * 1.8), (3.33 * 1.8), (-10 * 1.8), 0.0288,
+                               0.0108, 0.00002592, 0.0216, 0, 0.0018, 0.009, 0.0036, 0.0018, 0.0000666]
 
+        # SET UP EVOLUTIONARY COMPUTATION ----------------------
         self.gc_ec = ec.EvolutionaryComputation(rand)
-        self.gc_ec.selector = ec.selectors.truncation_selection  # truncation selection is purely deterministic. Choses param populations based on absol fitness
+        self.gc_ec.selector = ec.selectors.truncation_selection  # purely deterministic
         self.gc_ec.variator = [ec.variators.uniform_crossover, ec.variators.gaussian_mutation]
         self.gc_ec.replacer = ec.replacers.generational_replacement
         self.gc_ec.terminator = ec.terminators.evaluation_termination  # terminates after max number of evals is met
-        self.gc_ec.observer = ec.observers.plot_observer
-        # self.gc_ec.observer = ec.observers.file_observer  # use to save optimizer data
+        self.gc_ec.observer = ec.observers.plot_observer  # save to file, use observers.file_observer
 
-        self.final_pop = self.gc_ec.evolve(generator=self.generate_netparams,
-                                           # assign design parameter generator to iterator parameter generator
-                                           evaluator=self.evaluate_netparams,
-                                           # assign fitness function to iterator evaluator
-                                           pop_size=self.pop_size,
-                                           # each generation of parameter sets will consist of 10 individuals
+        self.final_pop = self.gc_ec.evolve(generator=self.generate_netparams,  # f'n for initializing params
+                                           evaluator=self.evaluate_netparams,  # f'n for evaluating fitness values
+                                           pop_size=self.pop_size,  # number of parameter sets per evaluation
                                            maximize=False,  # best fitness corresponds to minimum value
-                                           bounder=ec.Bounder(self.minParamValues, self.maxParamValues),
-                                           # boundaries for parameter set ([probability, weight, delay])
+                                           bounder=ec.Bounder(  # set min/max param bounds
+                                               self.minParamValues,
+                                               self.maxParamValues
+                                           ),
                                            max_evaluations=self.max_evaluations,
                                            num_selected=self.num_selected,
-                                           # number of generated parameter sets to be selected for next generation
-                                           mutation_rate=self.mutation_rate,  # rate of mutation
-                                           num_inputs=self.num_inputs,  # len([probability, weight, delay])
-                                           num_elites=self.num_elites)  # 1 existing individual will survive to next generation if it has better fitness than an individual selected by the tournament selection
+                                           mutation_rate=self.mutation_rate,
+                                           num_inputs=self.num_inputs,
+                                           num_elites=self.num_elites
+                                           )
 
-        self.final_pop.sort(reverse=True)  # sort final population so best fitness (minimum difference) is first in list
+        self.final_pop.sort(reverse=True)  # sort final population so best fitness is first in list
         self.bestCand = self.final_pop[0].candidate  # bestCand <-- individual @ start of list
 
-        plt.savefig('figures/op-output/observer_%s.pdf' % self.flag)
+        plt.savefig('figures/op-output/observer_%s.pdf' % self.flag)  # save fitness vs. iterations graph
         plt.close()
         return self.bestCand
 
-    def build_optimizedcell(self, currentval=0.33):
+    def build_optimizedcell(self):
+        """ Replaces baseline parameters with parameters from best candidate, then uses current injection experiment
+            to build 'optimized' cell.
+
+        Returns
+            'dict'. Results of current clamp from optimized cell.
+        """
         j = 0
         for key in self.free_params.keys():
-            # for j, val in zip(range(0,len(self.bestCand)), self.free_params[key]):
             for val in self.free_params[key]:
                 self.cell_dict['secs']['soma']['mechs'][key][val] = self.bestCand[j]
                 j = j + 1
-        finalclamp = self.curr_inj(currentval)
+        finalclamp = self.curr_inj(0.33)
         # self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
         return finalclamp
 
     def revert_to_baseline(self):
+        """ Replaces optimized parameters with baseline parameters to ensure each simulated neuron starts with the same
+            baseline parameters.
+
+        Returns
+            'dict'. Results of current clamp.
+        """
         # TODO: fix this. Doesn't seem to do anything currently.
         j = 0
         for key in self.free_params.keys():
-            # for j, val in zip(range(0,len(self.bestCand)), self.free_params[key]):
             for val in self.free_params[key]:
                 self.cell_dict['secs']['soma']['mechs'][key][val] = self.baseline[j]
                 j = j + 1
         clamptobuild = self.curr_inj(0.33)
-        # self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
         return clamptobuild
 
-    def store_fis(self):
+    def store_curves(self):
+        """ Generates set of n optimized neurons (n_simcells), stores baseline and optimized parameters,
+            IF and IV curves.
+
+        Returns
+            'tuple' of two DataFrames, (sim_fi_store, sim_iv_store)
+        """
+        # initialize empty DataFrames, populate with baseline parameters
         baselineparams = self.retrieve_baseline_params()
-        self.sim_fi_store = pd.DataFrame([])
         self.param_store = pd.DataFrame({"param": sum(free_params.values(), []), "baseline": baselineparams})
-        for cell_n in range(0, self.n_stimcells):
-            newparams = self.find_bestcandidate()
-            newparamdf = pd.DataFrame({"Cell_%s" % cell_n: newparams})
-            self.build_optimizedcell()
-            newcellfi = self.sim_fi(noise=False)
-            self.sim_fi_store = pd.concat([newcellfi, self.sim_fi_store])
-            self.param_store = pd.concat([self.param_store, newparamdf], axis=1)
-            self.revert_to_baseline()
+        self.sim_fi_store = pd.DataFrame([])
+        self.sim_iv_store = pd.DataFrame([])
+
+        # generate set of n_simcells, populate DataFrames above with FI, IV, params
+        for cell_n in range(0, self.n_simcells):
+            self.setseed = cell_n  # set new seed for evol'n computation
+            newparams = self.find_bestcandidate()  # find optimized parameters
+            newparamdf = pd.DataFrame({"Cell_%s" % cell_n: newparams})  # store those params with a label
+            self.param_store = pd.concat([self.param_store, newparamdf], axis=1)  # append params to DF
+            self.build_optimizedcell()  # build the optimized cell
+            newcellfi = self.sim_fi(noise=False)  # generate simulated FI curve
+            newcelliv = self.sim_iv()  # generate simulated IV curves
+            self.sim_fi_store = pd.concat([newcellfi, self.sim_fi_store])  # append FI curve to DF
+            self.sim_iv_store = pd.concat([newcelliv, self.sim_iv_store])  # append IV curve to DF
+            self.revert_to_baseline()  # revert parameters back to baseline
+
+        # save dataframes to .csv
         self.sim_fi_store.to_csv('data/parameters/simFIs_%s.csv' % self.flag)
+        self.sim_iv_store.to_csv('data/parameters/simIVs_%s.csv' % self.flag)
         self.param_store.to_csv('data/parameters/parameters_%s.csv' % self.flag)
 
-        return self.sim_fi_store
+        return self.sim_fi_store, self.sim_iv_store
 
-    def compute_avgFI(self):
-        sim_fi_store = self.store_fis()
-        aggregate = sim_fi_store.groupby(['I']).agg({'F': ['mean']})
-        stdv = sim_fi_store.groupby(['I']).agg({'F': ['std']})
-        self.avg = aggregate.F['mean'].values
-        self.sem = stdv.F['std'].values / np.sqrt(self.n_stimcells)
-        self.avg_FI = np.c_[np.linspace(0, 0.33, 12), self.avg, self.sem]
+    def compute_avg_curves(self):
+        """ Computes average simulated FI and IV curves and SEM
 
-        return self.avg_FI
+        Returns
+            'tuple' of two DataFrames, (avg_FI, avg_IV)
+        """
+        sim_stores = self.store_curves()
+        sim_fi_store = sim_stores[0]
+        sim_iv_store = sim_stores[1]
 
-    def return_summarydata(self):
+        # average simulated FI curve:
+        avgfi = sim_fi_store.groupby(['I']).agg({'F': ['mean']}).values
+        semfi = sim_fi_store.groupby(['I']).agg({'F': ['std']}).values / np.sqrt(self.n_simcells)
+        self.avg_FI = np.c_[np.linspace(0, 0.33, 12), avgfi, semfi]
+
+        # average simulated IV curves:
+        iv_na = sim_iv_store.groupby(['V']).agg({'Na': ['mean']}).values
+        iv_k = sim_iv_store.groupby(['V']).agg({'K': ['mean']}).values
+        stdv_na = sim_iv_store.groupby(['V']).agg({'Na': ['std']}).values / np.sqrt(self.n_simcells)
+        stdv_k = sim_iv_store.groupby(['V']).agg({'K': ['std']}).values / np.sqrt(self.n_simcells)
+        self.avg_IV = np.c_[np.linspace(-70, 20, 10), iv_na, stdv_na, iv_k, stdv_k]
+
+        return self.avg_FI, self.avg_IV
+
+    def plot_results(self):
+        """ Plots average simulated IV and FI curves from optimized neurons against avg curves from data. Saves
+        figure to 'figures/op-output'. Automatically called when optimizeparams is instantiated.
+        """
+
+        # Generate and collect all data for plotting
         currentvals = np.linspace(0, 0.33, 12)
         baselineparams = self.retrieve_baseline_params()
         baselinecellfi = self.sim_fi(noise=False).to_numpy()
+        baselinecelliv = self.sim_iv().to_numpy()
         exp_fi = self.data_fi()
-        avg_fi = self.compute_avgFI()
-
-        fig1 = plt.figure("fivsfi")
-        plt.plot(baselinecellfi[:, 0], baselinecellfi[:, 1], color='0.7', linestyle='dashed', label='Baseline')
-        plt.errorbar(exp_fi[:, 0], exp_fi[:, 1], yerr=exp_fi[:, 2], color='0.5', label='Data')
-        plt.errorbar(avg_fi[:, 0], avg_fi[:, 1], yerr=avg_fi[:, 2], color='0.0', label='Optimized')
-        plt.xlabel("Current (nA)")
-        plt.ylabel("Frequency (Hz)")
-        plt.legend(loc="upper left")
-        fig1.savefig('figures/op-output/fivsfi_simavg_%s.pdf' % self.flag)
-
+        exp_iv = self.data_iv()
+        simcurves = self.compute_avg_curves()
+        avg_fi = simcurves[0]
+        avg_iv = simcurves[1]
         self.revert_to_baseline()
 
-        fig2, axis = plt.subplots(12, 1)
-        i = 0
-        for currentval in currentvals:
-            newcell = self.curr_inj(currentval, noise=True)
-            axis[i].plot(newcell['t'], newcell['V'], color='0.0', label='$%.2f nA$' % currentval)
-            box = axis[i].get_position()
-            axis[i].set_position([box.x0, box.y0, box.width * 0.7, box.height])
-            axis[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            axis[i].yaxis.set_visible(False)
-            i = i + 1
-        fig2.supxlabel('Time (ms)')
-        fig2.supylabel('Membrane Potential')
-        fig2.suptitle('Optimized: %s' % self.flag)
-        fig2.savefig('figures/op-output/optimized_%s.pdf' % self.flag)
-        plt.close(fig2)
+        fig1, (ax1, ax2, ax3) = plt.subplots(3, 1)
+        # FI curves
+        ax1.plot(baselinecellfi[:, 0], baselinecellfi[:, 1], color='0.7', linestyle='dashed', label='Baseline')
+        ax1.errorbar(exp_fi[:, 0], exp_fi[:, 1], yerr=exp_fi[:, 2], color='0.5', label='Data')
+        ax1.errorbar(avg_fi[:, 0], avg_fi[:, 1], yerr=avg_fi[:, 2], color='0.0', label='Optimized')
+        #box = ax1.get_position()
+        #ax1.set_position([box.x0, box.y0, box.width * 0.7, box.height])
+        ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax1.set_xlabel("Current (nA)")
+        ax1.set_ylabel("Frequency (Hz)")
+
+        # IV curve: Na
+        ax2.plot(baselinecelliv[:, 0], baselinecelliv[:, 1], color='0.7', linestyle='dashed', label='Baseline Na')
+        ax2.errorbar(exp_iv[:, 0], exp_iv[:, 1], yerr=exp_iv[:, 2], color='0.5', label='Data Na')
+        ax2.errorbar(avg_iv[:, 0], avg_iv[:, 1], yerr=avg_iv[:, 2], color='0.0', label='Optimized')
+        ax2.axhline(0, lw=0.25, color='0.0')  # x = 0
+        ax2.axvline(0, lw=0.25, color='0.0')  # y = 0
+        #box = ax2.get_position()
+        #ax2.set_position([box.x0, box.y0, box.width * 0.7, box.height])
+        ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax2.set_xlabel("Voltage (mV)")
+        ax2.set_ylabel("Current (nA)")
+
+        # IV curve: K
+        ax3.plot(baselinecelliv[:, 0], baselinecelliv[:, 2], color='0.7', linestyle='dashed', label='Baseline K')
+        ax3.errorbar(exp_iv[:, 0], (exp_iv[:, 3] + exp_iv[:, 5]), yerr=(exp_iv[:, 4] + exp_iv[:, 6]),
+                         color='0.5', label='Data K')
+        ax3.errorbar(avg_iv[:, 0], avg_iv[:, 3], yerr=avg_iv[:, 4], color='0.0', label='Optimized K')
+        ax3.axhline(0, lw=0.25, color='0.0')  # x = 0
+        ax3.axvline(0, lw=0.25, color='0.0')  # y = 0
+        #box = ax3.get_position()
+        #ax3.set_position([box.x0, box.y0, box.width * 0.7, box.height])
+        ax3.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax3.set_xlabel("Voltage (mV)")
+        ax3.set_ylabel("Current (nA)")
+
+        fig1.tight_layout()
+        fig1.savefig('figures/op-output/optimizationresults_%s.pdf' % self.flag, bbox_inches="tight")
 
 
-gc = importgc()  # re-loading to ensure baseline params are the same each time
-op_hcc = optimizeparams(gc, free_params, rawhc, 'HC', 'CTRL', 'MSE')
-op_hcc.return_summarydata()
+# TODO: test reverttobaseline, see if we can eliminate the gc init
 
-gc1 = importgc()
-op_hcl = optimizeparams(gc1, free_params, rawhc, 'HC', 'LITM', 'MSE')
-op_hcl.return_summarydata()
+op_hcc = optimizeparams(importgc(), free_params, rawhc, rawhciv, 'HC', 'CTRL')
 
-gc2 = importgc()
-op_lrc = optimizeparams(gc2, free_params, rawlr, 'LR', 'CTRL', 'MSE')
-op_lrc.return_summarydata()
-
-gc3 = importgc()
-op_lrl = optimizeparams(gc3, free_params, rawlr, 'LR', 'LITM', 'MSE')
-op_lrl.return_summarydata()
-
-gc4 = importgc()
-op_nrc = optimizeparams(gc4, free_params, rawnr, 'NR', 'CTRL', 'MSE')
-op_nrc.return_summarydata()
-
-gc5 = importgc()
-op_nrl = optimizeparams(gc5, free_params, rawnr, 'NR', 'LITM', 'MSE')
-op_nrl.return_summarydata()
+'''
+opt_results = [
+    optimizeparams(importgc(), free_params, rawnrn, rawnrniv, group, condition, )
+    for (rawnrn, rawnrniv, group) in [(rawhc, rawhciv, "HC"), (rawlr, rawlriv, "LR"), (rawnr, rawnriv, "NR")]
+    for condition in ["CTRL", "LITM"]
+]
+'''

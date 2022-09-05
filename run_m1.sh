@@ -16,9 +16,10 @@ mkdir figures/op-output
 # Run DG Model 
 #if wanting to run natively on m1
 nrnivmodl mods
-#nrniv main.hoc
 python optimize_params.py
 python computefoldchange.py
+#nrniv main.hoc
+
 #if wanting to run using Rosetta
 #arch -arch x86_64 nrnivmodl mods
 #arch -arch x86_64 nrniv main.hoc

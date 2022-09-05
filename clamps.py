@@ -4,6 +4,7 @@
 # ========================================================================
 import numpy as np
 from netpyne import specs, sim
+import random
 
 
 class VClamp(object):
@@ -80,7 +81,7 @@ class VClamp(object):
     def __call__(self, amp):
         """ 
         Arguments: 
-            amp: `list` of `float`. Voltage at which membrane is to be maintained [nA]
+            amp: `list` of `float`. Voltage at which membrane is to be maintained [mV]
 
         Returns: 
             `dict`. Simulation data with the following key-value pairs 
@@ -100,13 +101,14 @@ class VClamp(object):
 
 
 class IClamp(object):
-    def __init__(self, cell, delay=100, duration=200, T=400, dt=0.025,
+    def __init__(self, cell, noise = False, delay=100, duration=200, T=400, dt=0.025,
                  record_step=0.1, verbose=False):
         """ Runs a current-clamp experiment stimulating and recording at the soma
         
         Arguments: 
             cell: `dict`. Cellular properties specified in NetPyNE dictionary syntax
             delay: `float`. Time after which current starts [ms]
+            noise: 'bool' Option to include background noise to simulation.
             duration: `float`. Duration of current injection [ms]
             T: `float`. Total duration of simulation [ms]
             dt: `float`. Integration timestep [ms]
@@ -117,6 +119,7 @@ class IClamp(object):
         """
         self.cell = cell
         self.delay = delay
+        self.noise = noise
         self.duration = duration
         self.T = T
         self.dt = dt
@@ -132,6 +135,12 @@ class IClamp(object):
         self.netparams.cellParams['neuron'] = self.cell
         self.netparams.popParams['pop'] = {'cellType': 'neuron', 'numCells': 1}
 
+    def _set_netparams_synmech(self):
+        self.netparams.synMechParams['exc'] = {'mod': 'Exp2Syn',
+                                               'tau1': 0.1,
+                                               'tau2': 5.0,
+                                               'e': 0}
+
     def _set_netparams_stim(self):
         self.netparams.stimSourceParams['iclamp'] = {'type': 'IClamp',
                                                      'del': self.delay,
@@ -142,6 +151,17 @@ class IClamp(object):
             'loc': 0.5,
             'conds': {'pop': 'pop', 'cellList': [0]},
         }
+        if self.noise:
+            self.netparams.stimSourceParams['bkg'] = {'type': 'NetStim',
+                                                      'rate': 10}
+            self.netparams.stimTargetParams['bkg->neuron'] = {
+                'source': 'bkg',
+                'sec': 'soma',
+                'loc': 0.5,
+                'conds': {'pop': 'pop', 'cellList': [0]},
+                'delay': 5,
+                'synMech': 'exc'
+            }
 
     def _set_simparams(self):
         self.simconfig = specs.SimConfig()
@@ -155,7 +175,7 @@ class IClamp(object):
         }
         self.simconfig.recordStep = self.record_step
 
-    def __call__(self, amp):
+    def __call__(self, amp, noise=random.uniform(0.8, 1), weight=0.0001):
         """ 
         Arguments: 
             amp: `float`. Current to be injected [nA]
@@ -169,6 +189,9 @@ class IClamp(object):
                 - `rate`: Firing rate only during current injection [Hz]
         """
         self.netparams.stimSourceParams['iclamp']['amp'] = amp
+        if self.noise:
+            self.netparams.stimSourceParams['bkg']['noise'] = noise
+            self.netparams.stimTargetParams['bkg->neuron']['weight'] = weight
         sim.createSimulateAnalyze(self.netparams, self.simconfig)
         
         print(list(sim.allSimData.keys()))

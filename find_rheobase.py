@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from netpyne import sim, specs
 from scipy.optimize import golden
 from clamps import VClamp, IClamp
-from clamps_noise import ICNoise
 import random
 
 netparams = specs.NetParams()
@@ -27,8 +26,6 @@ class ElectrophysiologicalPhenotype(object):
         self.fi_data = {} 
         self.fi_curve = None
         self.rheo_current_brack = None
-        self.noiselvl = random.uniform(0.8, 1)
-        self.connwt = random.uniform(0.01, 0.5)
 
     def step_current(self, current, delay=250, duration=500):
         """ Injects a level of current and returns the number of spikes emitted
@@ -43,11 +40,11 @@ class ElectrophysiologicalPhenotype(object):
         
         """
         if self.noise:
-            iclamp = ICNoise(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
-            res = iclamp(current, self.noiselvl, self.connwt)
+            iclamp = IClamp(self.cell_dict, noise=True, delay=delay, duration=duration, T=duration + delay * 2)
+            res = iclamp(current)
 
         else:
-            iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay*2)
+            iclamp = IClamp(self.cell_dict, noise=False, delay=delay, duration=duration, T=duration + delay*2)
             res = iclamp(current)
         return res
 
