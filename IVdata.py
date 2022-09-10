@@ -70,7 +70,7 @@ class IVdata(object):
 
 # clamp = IClamp(gc)
 
-
+'''
 IV = IVdata(gc) # instantiate class
 voltclamp = IV.step_voltage([-100])  
 testclamp = IV.compute_ivdata(vlow = -70, vhigh = 60, n_steps = 14, delay = 10, duration = 5)
@@ -92,3 +92,4 @@ for v in np.linspace(-70,20,10):
     plt.plot(voltclampi['t'], voltclampi['i_na'])
 plt.savefig('figures/op-output/voltclamp_iterate.png')
 
+'''

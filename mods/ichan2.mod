@@ -74,9 +74,7 @@ NONSPECIFIC_CURRENT il, igabaa 				: leak current
 RANGE gnatbar, gkfbar, gksbar				: gbar values for Na, K(slow/fast)
 RANGE gl, el, ina, ik, il, ggabaa, igabaa, egabaa	: gbar and reversal poti for leak current
 RANGE vshiftma, vshiftmb, vshiftha, vshifthb, vshiftnfa, vshiftnfb, vshiftnsa, vshiftnsb   : params for shifting Na and K (in)activation curves
-RANGE cshift_ama, cshift_amb, cshift_bma, cshift_bmb, cshift_aha, cshift_ahb, cshift_bha, cshift_bhb
         }
-
 : The INDEPENDENT statement was omitted; INDEPENDENT statements are irrelevant to NEURON. http://www.neuron.yale.edu/phpbb/viewtopic.php?f=16&t=2351 
 : INDEPENDENT {t FROM 0 TO 100 WITH 100 (ms)}
  
@@ -93,14 +91,6 @@ PARAMETER {
     vshiftmb   (mV)                  : (to allow for fitting) shift m channel activation curve
     vshiftha   (mV)                  : (to allow for fitting) shift h channel inactivation curve
     vshifthb   (mV)                  : (to allow for fitting) shift h channel inactivation curve
-    cshift_ama  (mV)
-    cshift_amb  (mV)
-    cshift_bma  (mV)
-    cshift_bmb  (mV)
-    cshift_aha  (mV)
-    cshift_ahb  (mV)
-    cshift_bha  (mV)
-    cshift_bhb  (mV)
 
 	gkfbar 	(mho/cm2)				: K  (gbar(slow/fast), reversal is ek)
     vshiftnfa   (mV)                  : (to allow for fitting) shift fast potassium channel activation curve
@@ -201,15 +191,15 @@ PROCEDURE rates(v) {
     q10 = 3^((celsius - 6.3)/10)
 
     :"m" sodium activation system - act and inact cross at -40	: shifted by 68mV compared to in Aradi 1999/2002
-	alpha = cshift_ama*vtrap((v+vshiftma),cshift_amb)		: in Aradi 1999: alpha = -0.3*vtrap((v-25),-5); in Aradi 2002: alpha = 0.3*vtrap((v-25),-5) <ah>
-	beta = cshift_bma*vtrap((v+vshiftmb),cshift_bmb)			: in Aradi 1999: beta = 0.3*vtrap((v-53),5);  in Aradi 2002:  beta = -0.3*vtrap((v-53),5) <ah>
+	alpha = -0.3*vtrap((v+vshiftma),-5)		: in Aradi 1999: alpha = -0.3*vtrap((v-25),-5); in Aradi 2002: alpha = 0.3*vtrap((v-25),-5) <ah>
+	beta = 0.3*vtrap((v+vshiftmb),5)			: in Aradi 1999: beta = 0.3*vtrap((v-53),5);  in Aradi 2002:  beta = -0.3*vtrap((v-53),5) <ah>
 	sum = alpha+beta        
 	mtau = 1/sum      
     minf = alpha/sum
     
     :"h" sodium inactivation system		    : shifted by 68mV compared to in Aradi 1999/2002
-	alpha = cshift_aha/exp((v+vshiftha)/cshift_ahb)			: in Aradi 1999/2002:  alpha = 0.23/exp((v-3)/20) <ah>
-	beta = cshift_bha/(1+exp((v+vshifthb)/cshift_bhb))	: in Aradi 1999/2002:  beta = 3.33/(1+exp((v-55.5)/-10)) <ah>
+	alpha = 0.23/exp((v+vshiftha)/20)			: in Aradi 1999/2002:  alpha = 0.23/exp((v-3)/20) <ah>
+	beta = 3.33/(1+exp((v+vshifthb)/-10))	: in Aradi 1999/2002:  beta = 3.33/(1+exp((v-55.5)/-10)) <ah>
 	sum = alpha+beta
 	htau = 1/sum 
     hinf = alpha/sum 

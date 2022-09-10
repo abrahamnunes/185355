@@ -21,8 +21,6 @@ import random
 
 netparams = specs.NetParams()
 
-# TODO: add docstrings to class and methods
-
 """IMPORTS used by optimizeparams 
     gc: import granule cell from NEURON .hoc file 
     free_params: parameters of interest to be optimized
@@ -47,10 +45,9 @@ def importgc():
 free_params = {
     'bk': ['gkbar'],  # big conductance, calcium-activated potassium channel
     'ichan2': ['gnatbar', 'vshiftma', 'vshiftmb', 'vshiftha', 'vshifthb', 'vshiftnfa', 'vshiftnfb', 'vshiftnsa',
-               'vshiftnsb', 'cshift_ama', 'cshift_amb', 'cshift_bma', 'cshift_bmb', 'cshift_aha', 'cshift_ahb',
-               'cshift_bha', 'cshift_bhb', 'gkfbar', 'gksbar', 'gl'],  # sodium, potassium parameters
+               'vshiftnsb',
+               'gkfbar', 'gksbar', 'gl'],  # sodium, potassium parameters
     'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
-    'kir': ['gkbar'],  # inward rectifier potassium (Kir) channel
     'km': ['gbar'],  # KM channel
     'lca': ['glcabar'],  # l-type calcium
     'nca': ['gncabar'],  # n-type calcium
@@ -166,7 +163,7 @@ class optimizeparams(object):
             'pandas.DataFrame'. Simulated FI curve.
         """
         ep = ElectrophysiologicalPhenotype(self.cell_dict, noise=noise)
-        self.simfi = ep.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=12, delay=0, duration=1000)
+        self.simfi = ep.compute_fi_curve(ilow=0, ihigh=0.033, n_steps=12, delay=0, duration=1500)
         return self.simfi
 
     def data_fi(self):
@@ -233,9 +230,13 @@ class optimizeparams(object):
             na_currs = np.sum([((x1 - x2) ** 2) for (x1, x2) in zip(IV_data[:, 1], IV_sim[:, 1])]) / len(IV_data[:, 1])
             k_currs = np.sum(
                 [((x1 - x2) ** 2) for (x1, x2) in zip((IV_data[:, 3] + IV_data[:, 5]), IV_sim[:, 2])]) / len(
-                IV_data[:, 1])
+                IV_data[:, 1]
+            )
 
-            fitness = (na_currs + k_currs + ficurves) / 3
+            #k_currs = 0
+            #ficurves = 0
+
+            fitness = (na_currs + k_currs + ficurves)
 
             self.fitnessCandidates.append(fitness)
 
@@ -269,13 +270,20 @@ class optimizeparams(object):
         # TODO: find cleaner way of dealing with these lists, allow for easier modification
         # TODO: pilot with different min/max bounds to improve fit of IV curves.
 
-        self.minParamValues = [0.00012, 0.024, 39.99, 13.95, 50, 0, 12.0, 35.0, 25.0, 50.0, (-0.3 * 0.2), (-5 * 0.2),
-                               (0.3 * 0.2), (5 * 0.2), (0.23 * 0.2), (20 * 0.2), (3.33 * 0.2), (-10 * 0.2), 0.0032,
-                               0.0012, 0.00000288, 0.0024, 0, 0.0002, 0.001, 0.0004, 0.0002, 0.0000074]
+        # self.minParamValues = [0.1 * param for param in self.baseline] #0.5 best for IF, Na
+        #self.maxParamValues = [3.0 * param for param in self.baseline]  # 3.0 best for IF, Na
 
-        self.maxParamValues = [0.00108, 4, 46.01, 16.05, 90, 25, 25.0, 50.0, 40.0, 60.0, (-0.3 * 1.8), (-5 * 1.8),
-                               (0.3 * 1.8), (5 * 1.8), (0.23 * 1.8), (20 * 1.8), (3.33 * 1.8), (-10 * 1.8), 0.0288,
-                               0.0108, 0.00002592, 0.0216, 0, 0.0018, 0.009, 0.0036, 0.0018, 0.0000666]
+        self.minParamValues = [(0.0006 * 0.1), (0.3 * 0.9), (68 * 0.9), (22 * 0.9), (120 * 0.9), (20 * 0.9),
+                               (33 * 0.9), (78 * 0.9), (41 * 0.9), (100 * 0.9), (0.020 * 0.9), (0.001 * 0.9),
+                               (1.44E-05 * 0.1), (0.012 * 0.1), (0.001 * 0.1), (0.005 * 0.1), (0.002 * 0.1),
+                               (0.001 * 0.1),
+                               (3.70E-05 * 0.1)]
+
+        self.maxParamValues = [(0.0006 * 2.0), (0.3 * 1.1), (68 * 1.1), (22 * 1.1), (120 * 1.1), (20 * 1.1),
+                               (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.1), (0.001 * 1.1),
+                               (1.44E-05 * 2.0), (0.012 * 2.0), (0.001 * 2.0), (0.005 * 2.0), (0.002 * 2.0),
+                               (0.001 * 2.0),
+                               (3.70E-05 * 2.0)]
 
         # SET UP EVOLUTIONARY COMPUTATION ----------------------
         self.gc_ec = ec.EvolutionaryComputation(rand)
@@ -385,7 +393,7 @@ class optimizeparams(object):
         # average simulated FI curve:
         avgfi = sim_fi_store.groupby(['I']).agg({'F': ['mean']}).values
         semfi = sim_fi_store.groupby(['I']).agg({'F': ['std']}).values / np.sqrt(self.n_simcells)
-        self.avg_FI = np.c_[np.linspace(0, 0.33, 12), avgfi, semfi]
+        self.avg_FI = np.c_[np.linspace(0, 0.033, 12), avgfi, semfi]
 
         # average simulated IV curves:
         iv_na = sim_iv_store.groupby(['V']).agg({'Na': ['mean']}).values
@@ -402,7 +410,7 @@ class optimizeparams(object):
         """
 
         # Generate and collect all data for plotting
-        currentvals = np.linspace(0, 0.33, 12)
+        currentvals = np.linspace(0, 0.033, 12)
         baselineparams = self.retrieve_baseline_params()
         baselinecellfi = self.sim_fi(noise=False).to_numpy()
         baselinecelliv = self.sim_iv().to_numpy()
@@ -418,8 +426,6 @@ class optimizeparams(object):
         ax1.plot(baselinecellfi[:, 0], baselinecellfi[:, 1], color='0.7', linestyle='dashed', label='Baseline')
         ax1.errorbar(exp_fi[:, 0], exp_fi[:, 1], yerr=exp_fi[:, 2], color='0.5', label='Data')
         ax1.errorbar(avg_fi[:, 0], avg_fi[:, 1], yerr=avg_fi[:, 2], color='0.0', label='Optimized')
-        #box = ax1.get_position()
-        #ax1.set_position([box.x0, box.y0, box.width * 0.7, box.height])
         ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax1.set_xlabel("Current (nA)")
         ax1.set_ylabel("Frequency (Hz)")
@@ -427,11 +433,9 @@ class optimizeparams(object):
         # IV curve: Na
         ax2.plot(baselinecelliv[:, 0], baselinecelliv[:, 1], color='0.7', linestyle='dashed', label='Baseline Na')
         ax2.errorbar(exp_iv[:, 0], exp_iv[:, 1], yerr=exp_iv[:, 2], color='0.5', label='Data Na')
-        ax2.errorbar(avg_iv[:, 0], avg_iv[:, 1], yerr=avg_iv[:, 2], color='0.0', label='Optimized')
+        ax2.errorbar(avg_iv[:, 0], avg_iv[:, 1], yerr=avg_iv[:, 2], color='0.0', label='Optimized Na')
         ax2.axhline(0, lw=0.25, color='0.0')  # x = 0
         ax2.axvline(0, lw=0.25, color='0.0')  # y = 0
-        #box = ax2.get_position()
-        #ax2.set_position([box.x0, box.y0, box.width * 0.7, box.height])
         ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax2.set_xlabel("Voltage (mV)")
         ax2.set_ylabel("Current (nA)")
@@ -439,12 +443,10 @@ class optimizeparams(object):
         # IV curve: K
         ax3.plot(baselinecelliv[:, 0], baselinecelliv[:, 2], color='0.7', linestyle='dashed', label='Baseline K')
         ax3.errorbar(exp_iv[:, 0], (exp_iv[:, 3] + exp_iv[:, 5]), yerr=(exp_iv[:, 4] + exp_iv[:, 6]),
-                         color='0.5', label='Data K')
+                     color='0.5', label='Data K')
         ax3.errorbar(avg_iv[:, 0], avg_iv[:, 3], yerr=avg_iv[:, 4], color='0.0', label='Optimized K')
         ax3.axhline(0, lw=0.25, color='0.0')  # x = 0
         ax3.axvline(0, lw=0.25, color='0.0')  # y = 0
-        #box = ax3.get_position()
-        #ax3.set_position([box.x0, box.y0, box.width * 0.7, box.height])
         ax3.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax3.set_xlabel("Voltage (mV)")
         ax3.set_ylabel("Current (nA)")
@@ -455,12 +457,13 @@ class optimizeparams(object):
 
 # TODO: test reverttobaseline, see if we can eliminate the gc init
 
-op_hcc = optimizeparams(importgc(), free_params, rawhc, rawhciv, 'HC', 'CTRL')
+#op_hcc = optimizeparams(importgc(), free_params, rawhc, rawhciv, 'HC', 'CTRL')
 
-'''
+
 opt_results = [
     optimizeparams(importgc(), free_params, rawnrn, rawnrniv, group, condition, )
     for (rawnrn, rawnrniv, group) in [(rawhc, rawhciv, "HC"), (rawlr, rawlriv, "LR"), (rawnr, rawnriv, "NR")]
     for condition in ["CTRL", "LITM"]
 ]
-'''
+
+

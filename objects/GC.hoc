@@ -157,14 +157,6 @@ begintemplate GranuleCell
                 vshiftnfb_ichan2 = 43                          // value Yim et al. 2015
                 vshiftnsa_ichan2 = 30                          // value Yim et al. 2015
                 vshiftnsb_ichan2 = 55                          // value Yim et al. 2015
-                cshift_ama_ichan2 = -0.3
-                cshift_amb_ichan2 = -5
-                cshift_bma_ichan2 = 0.3
-                cshift_bmb_ichan2 = 5
-                cshift_aha_ichan2 = 0.23
-                cshift_ahb_ichan2 = 20
-                cshift_bha_ichan2 = 3.33
-                cshift_bhb_ichan2 = -10
         }
 
         soma {insert ichan2  						

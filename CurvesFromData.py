@@ -31,8 +31,8 @@ class extractFI(object):
         self.LITM_SEM = stdv.AP['std']['LITM'].values / np.sqrt(counts.Cell['nunique']['LITM'])
 
         ## add current vals as column
-        self.CTRL_APs = np.c_[np.linspace(0, 0.33, 12), self.CTRL_APs, self.CTRL_SEM]
-        self.LITM_APs = np.c_[np.linspace(0, 0.33, 12), self.LITM_APs, self.LITM_SEM]
+        self.CTRL_APs = np.c_[np.linspace(0, 0.033, 12), self.CTRL_APs, self.CTRL_SEM]
+        self.LITM_APs = np.c_[np.linspace(0, 0.033, 12), self.LITM_APs, self.LITM_SEM]
 
         if self.condition == 'CTRL':
             return self.CTRL_APs

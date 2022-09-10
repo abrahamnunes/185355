@@ -10,6 +10,7 @@ mkdir figures/pattern-separation
 mkdir figures/voltage-tracings
 mkdir figures/fi-curves
 mkdir figures/op-output
+mkdir figures/manual-adjust
 
 # Get FI Curves
 
