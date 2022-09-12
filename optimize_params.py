@@ -236,7 +236,7 @@ class optimizeparams(object):
             #k_currs = 0
             #ficurves = 0
 
-            fitness = (na_currs + k_currs + ficurves)
+            fitness = (0.45*na_currs + 0.45*k_currs + 0.1*ficurves)
 
             self.fitnessCandidates.append(fitness)
 
@@ -264,11 +264,10 @@ class optimizeparams(object):
         # rand = np.random.RandomState(self.setseed)
 
         rand = Random()
-        rand.seed(self.setseed)  # will take cell # as seed (i.e., simulate 1 cell, seed will be 1).
+        rand.seed(self.setseed)  # will take cell # as seed (n_simcells = 1, seed = 0. n_simcells = 2, seed = 1, etc).
 
         # SET UP MIN/MAX BOUNDS FOR PARAMETERS ------------------
         # TODO: find cleaner way of dealing with these lists, allow for easier modification
-        # TODO: pilot with different min/max bounds to improve fit of IV curves.
 
         # self.minParamValues = [0.1 * param for param in self.baseline] #0.5 best for IF, Na
         #self.maxParamValues = [3.0 * param for param in self.baseline]  # 3.0 best for IF, Na
@@ -279,8 +278,8 @@ class optimizeparams(object):
                                (0.001 * 0.1),
                                (3.70E-05 * 0.1)]
 
-        self.maxParamValues = [(0.0006 * 2.0), (0.3 * 1.1), (68 * 1.1), (22 * 1.1), (120 * 1.1), (20 * 1.1),
-                               (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.1), (0.001 * 1.1),
+        self.maxParamValues = [(0.0006 * 2.0), (0.3 * 1.3), (68 * 1.1), (22 * 1.1), (120 * 1.1), (20 * 1.1),
+                               (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.5), (0.001 * 1.5),
                                (1.44E-05 * 2.0), (0.012 * 2.0), (0.001 * 2.0), (0.005 * 2.0), (0.002 * 2.0),
                                (0.001 * 2.0),
                                (3.70E-05 * 2.0)]
