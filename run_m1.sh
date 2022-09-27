@@ -17,9 +17,9 @@ mkdir figures/manual-adjust
 # Run DG Model 
 #if wanting to run natively on m1
 nrnivmodl mods
-python optimize_params.py
-python computefoldchange.py
-#nrniv main.hoc
+#python optimize_params.py
+#python computefoldchange.py
+nrniv main.hoc
 
 #if wanting to run using Rosetta
 #arch -arch x86_64 nrnivmodl mods
@@ -28,6 +28,6 @@ python computefoldchange.py
 # Plot Network Structure
 
 # Analyze Data 
-#julia analysis.jl
+julia analysis.jl
 
 

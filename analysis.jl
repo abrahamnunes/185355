@@ -6,9 +6,9 @@ include("utilities.jl");
 default(show=false)
 
 # HYPERPARAMS
-n_runs = 10
+n_runs = 1
 patterns = 0:12
-labels = ["HC", "LR", "NR"]
+labels = ["HC_CTRL", "HC_LITM", "LR_CTRL", "LR_LITM", "NR_CTRL", "NR_LITM"]
 fig_ext = ".png"
 
 # CREATE NECESSARY DIRECTORIES 
@@ -53,7 +53,7 @@ global psfig = plot([0;1], [0;1], ls=:dash, c=:black,
                         size=(300, 300),
                         label=nothing, legend=:topleft)
 
-psc = Dict("HC"=>[], "LR"=>[], "NR"=>[])
+psc = Dict("HC_CTRL"=>[], "HC_LITM"=>[], "LR_CTRL"=>[], "LR_LITM"=>[], "NR_CTRL"=>[], "NR_LITM"=>[])
 for i ∈ 1:length(labels)
     for run ∈ 1:n_runs
         spikes = load_spike_files(patterns, labels[i]*"-$run", populations)

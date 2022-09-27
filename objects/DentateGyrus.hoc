@@ -16,7 +16,7 @@
 
         - Update docstrings on nc_append_rec() and nc_append()
         - Clean the following procs/funcs, which were not changed much from Yim et al.: 
-            - onnect_pp_to_gc()
+            - connect_pp_to_gc()
             - connect_pp_to_bc()
             - connect_pp_to_hipp()
         
@@ -66,7 +66,7 @@ begintemplate DentateGyrus
 
     // Network related declarations
     public ngcell, nbcell, nmcell, nhcell, npp, nmcell_per_lamella, ntotal
-    public p_sprouted_, scale_gpas_dg_, scale_sk_dg_, scale_kir_, scale_gabaa_
+    public p_sprouted_, scale_gl_conductances, scale_sk_conductances, scale_kir_, scale_gabaa_
     public scale_PP_strength, scale_PP2BC_strength, scale_PP2HC_strength
     public scale_HC2GC_strength, scale_MC2GC_strength, scale_GC2BC_strength 
     public scale_BC2GC_strength
@@ -267,8 +267,8 @@ begintemplate DentateGyrus
 
         */
         p_sprouted_ = 0     // proportion of other GCs to which a GC will connect 
-        scale_gpas_dg_       = 1      // scaling [%/100] of gpas of th GC model
-        scale_sk_dg_         = 1      // scaling of Ca-dependent K (SK) of th GC model
+        scale_gl_conductances      = 1      // scaling [%/100] of gpas of th GC model
+        scale_sk_conductances         = 1      // scaling of Ca-dependent K (SK) of th GC model
         scale_kir_           = 1      // scaling of KIR conductance in GC model
         scale_gabaa_         = 1      // scaling of GABAA in GC model
         scale_PP_strength    = 0.1    // scaling of synaptic weight of PP
@@ -336,48 +336,175 @@ begintemplate DentateGyrus
             - We can change HT and LT later.
         */
 
-        // Healthy control neurons 
-        if (strcmp($s1, "HC") == 0) {
-            scale_na_conductances = 1
-            scale_kdr_conductances = 1
-            scale_ka_conductances = 1
-            gbar_ht_ = 0.0004 
+        // Healthy neurons, control condition
+        if (strcmp($s1, "HC_CTRL") == 0) {
+            scale_bk_conductances = 1.147407768
+            scale_na_conductances = 2.25
+            scale_vshiftma_curveshift = 1.51209328
+            scale_vshiftmb_curveshift = 1.55891028
+            scale_vshiftha_curveshift = 1.861027793
+            scale_vshifthb_curveshift = 1.688332768
+            scale_vshiftnfa_curveshift = 1.871168064
+            scale_vshiftnfb_curveshift = 1.762872992
+            scale_vshiftnsa_curveshift = 1.351630334
+            scale_vshiftnsb_curveshift = 1.853195222
+            scale_fkdr_conductances = 1.413675859
+            scale_skdr_conductances = 0.2075651014
+            scale_gl_conductances = 8.37e-01
+            scale_ka_conductances = 0.4598435243
+            scale_km_conductances = 1.336582438
+            scale_lca_conductances = 0.1028960215
+            scale_nca_conductances = 0.4653881284
+            scale_tca_conductances = 2.71e-01
+            scale_sk_conductances = 0.1
+            gbar_ht_ = 0
             gbar_lt_ = 0
             scale_size_ = 1
-            scale_gpas_dg_ = 1
-            scale_sk_dg_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
         }
 
-        // Lithium Responders 
-        if (strcmp($s1, "LR") == 0) {
-            scale_na_conductances = 1.03
-            scale_kdr_conductances = 1.15
-            scale_ka_conductances = 0.0096/0.008
-            gbar_ht_ = 0.0008 
+        // Healthy neurons, lithium condition
+        if (strcmp($s1, "HC_LITM") == 0) {
+            scale_bk_conductances = 0.7382414535
+            scale_na_conductances = 2.784197968
+            scale_vshiftma_curveshift = 1.51209328
+            scale_vshiftmb_curveshift = 1.55891028
+            scale_vshiftha_curveshift = 2.013463141
+            scale_vshifthb_curveshift = 1.55271218
+            scale_vshiftnfa_curveshift = 1.755555235
+            scale_vshiftnfb_curveshift = 1.762872992
+            scale_vshiftnsa_curveshift = 1.488820928
+            scale_vshiftnsb_curveshift = 1.853195222
+            scale_fkdr_conductances = 1.590807634
+            scale_skdr_conductances = 0.221561935
+            scale_gl_conductances = 8.37e-01
+            scale_ka_conductances = 0.4514466887
+            scale_km_conductances = 0.4547861037
+            scale_lca_conductances = 0.1028960215
+            scale_nca_conductances = 0.4219067516
+            scale_tca_conductances = 5.55e-01
+            scale_sk_conductances = 0.1
+            gbar_ht_ = 0
             gbar_lt_ = 0
             scale_size_ = 1
-            scale_gpas_dg_ = 1
-            scale_sk_dg_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
         }
 
-        // Lithium Nonresponders 
-        if (strcmp($s1, "NR") == 0) {
-            scale_na_conductances = 0.026/0.033
-            scale_kdr_conductances = 1.3
-            scale_ka_conductances = 0.0104/0.008
-            gbar_ht_ = 0.0004 
+
+        // Lithium Responders, control condition
+        if (strcmp($s1, "LR_CTRL") == 0) {
+            scale_bk_conductances = 1.147407768
+            scale_na_conductances = 2.560147569
+            scale_vshiftma_curveshift = 1.556273802
+            scale_vshiftmb_curveshift = 1.55891028
+            scale_vshiftha_curveshift = 1.861027793
+            scale_vshifthb_curveshift = 1.591085669
+            scale_vshiftnfa_curveshift = 1.797148499
+            scale_vshiftnfb_curveshift = 1.742597175
+            scale_vshiftnsa_curveshift = 1.351630334
+            scale_vshiftnsb_curveshift = 1.853195222
+            scale_fkdr_conductances = 1.413675859
+            scale_skdr_conductances = 0.2075651014
+            scale_gl_conductances = 6.35e-01
+            scale_ka_conductances = 0.5949353897
+            scale_km_conductances = 1.629552871
+            scale_lca_conductances = 0.5759620486
+            scale_nca_conductances = 1.347652839
+            scale_tca_conductances = 2.71e-01
+            scale_sk_conductances = 0.1
+            gbar_ht_ = 0
             gbar_lt_ = 0
             scale_size_ = 1
-            scale_gpas_dg_ = 1
-            scale_sk_dg_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
         }
-    }
+
+        // Lithium Responders, lithium condition
+        if (strcmp($s1, "LR_LITM") == 0) {
+            scale_bk_conductances = 1.147407768
+            scale_na_conductances = 2.784197968
+            scale_vshiftma_curveshift = 1.53725826
+            scale_vshiftmb_curveshift = 1.55891028
+            scale_vshiftha_curveshift = 2.013463141
+            scale_vshifthb_curveshift = 1.55271218
+            scale_vshiftnfa_curveshift = 1.755555235
+            scale_vshiftnfb_curveshift = 1.762872992
+            scale_vshiftnsa_curveshift = 1.488820928
+            scale_vshiftnsb_curveshift = 1.866817401
+            scale_fkdr_conductances = 1.590807634
+            scale_skdr_conductances = 0.221561935
+            scale_gl_conductances = 1.00e-01
+            scale_ka_conductances = 0.4598435243
+            scale_km_conductances = 2
+            scale_lca_conductances = 0.1028960215
+            scale_nca_conductances = 0.4653881284
+            scale_tca_conductances = 5.55e-01
+            scale_sk_conductances = 0.1
+            gbar_ht_ = 0
+            gbar_lt_ = 0
+            scale_size_ = 1
+            scale_gabaa_ = 1
+            scale_kir_ = 0
+        }
+
+        // Lithium Non-Responders, control condition
+        if (strcmp($s1, "NR_CTRL") == 0) {
+            scale_bk_conductances = 1.147407768
+            scale_na_conductances = 2.560147569
+            scale_vshiftma_curveshift = 1.51209328
+            scale_vshiftmb_curveshift = 1.534118918
+            scale_vshiftha_curveshift = 1.85031682
+            scale_vshifthb_curveshift = 1.688332768
+            scale_vshiftnfa_curveshift = 1.871168064
+            scale_vshiftnfb_curveshift = 1.762872992
+            scale_vshiftnsa_curveshift = 1.351630334
+            scale_vshiftnsb_curveshift = 1.84850256
+            scale_fkdr_conductances = 1.733721531
+            scale_skdr_conductances = 0.1977009777
+            scale_gl_conductances = 1.93e+00
+            scale_ka_conductances = 0.4598435243
+            scale_km_conductances = 1.336582438
+            scale_lca_conductances = 0.1028960215
+            scale_nca_conductances = 0.4653881284
+            scale_tca_conductances = 1e-1
+            scale_sk_conductances = 1.005408885
+            gbar_ht_ = 0
+            gbar_lt_ = 0
+            scale_size_ = 1
+            scale_gabaa_ = 1
+            scale_kir_ = 0
+        }
+
+        // Lithium Non-Responders, lithium condition
+        if (strcmp($s1, "NR_LITM") == 0) {
+            scale_bk_conductances = 1.147407768
+            scale_na_conductances = 2.295696494
+            scale_vshiftma_curveshift = 1.53725826
+            scale_vshiftmb_curveshift = 1.583659231
+            scale_vshiftha_curveshift = 1.85031682
+            scale_vshifthb_curveshift = 1.688332768
+            scale_vshiftnfa_curveshift = 1.959861778
+            scale_vshiftnfb_curveshift = 1.790071643
+            scale_vshiftnsa_curveshift = 1.351630334
+            scale_vshiftnsb_curveshift = 1.84850256
+            scale_fkdr_conductances = 1.806084664
+            scale_skdr_conductances = 0.1977009777
+            scale_gl_conductances = 8.37e-01
+            scale_ka_conductances = 0.4598435243
+            scale_km_conductances = 1.629552871
+            scale_lca_conductances = 0.1028960215
+            scale_nca_conductances = 0.4653881284
+            scale_tca_conductances = 8.58e-01
+            scale_sk_conductances = 1.005408885
+            gbar_ht_ = 0
+            gbar_lt_ = 0
+            scale_size_ = 1
+            scale_gabaa_ = 1
+            scale_kir_ = 0
+        }
+     }
 
     // ########################################################################
     //  FUNCTIONS FOR SETTING UP CELLS/INPUTS
@@ -389,7 +516,7 @@ begintemplate DentateGyrus
         cells = new List()
 
         // Create populations 
-        for i=0, ngcell-1 {Gcell[i] = new GranuleCell(i,scale_na_conductances, scale_kdr_conductances, scale_ka_conductances, gbar_ht_, gbar_lt_, scale_size_, scale_gpas_dg_, scale_sk_dg_, scale_gabaa_, scale_kir_)}
+        for i=0, ngcell-1 {Gcell[i] = new GranuleCell(i,scale_bk_conductances, scale_na_conductances, scale_vshiftma_curveshift, scale_vshiftmb_curveshift, scale_vshiftha_curveshift, scale_vshifthb_curveshift, scale_vshiftnfa_curveshift, scale_vshiftnfb_curveshift, scale_vshiftnsa_curveshift, scale_vshiftnsb_curveshift, scale_fkdr_conductances, scale_skdr_conductances, scale_gl_conductances, scale_ka_conductances, scale_km_conductances, scale_lca_conductances, scale_nca_conductances, scale_tca_conductances, scale_sk_conductances, gbar_ht_, gbar_lt_, scale_size_, scale_gabaa_, scale_kir_)}
         for i=0, nbcell-1 {Bcell[i] = new BasketCell(i)}
         for i=0, nmcell-1 {Mcell[i] = new MossyCell(i)}
         for i=0, nhcell-1 {Hcell[i] = new HIPPCell(i)}

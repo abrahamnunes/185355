@@ -46,26 +46,54 @@ begintemplate GranuleCell
         // This is ridiculous. There must be a cleaner way. [ TODO ]
         narg = numarg()
         cell_index = $1
+        scale_bk_conductances = 1
         scale_na_conductances = 1
-        scale_kdr_conductances = 1
+        scale_vshiftma_curveshift = 1
+        scale_vshiftmb_curveshift = 1
+        scale_vshiftha_curveshift = 1
+        scale_vshifthb_curveshift = 1
+        scale_vshiftnfa_curveshift = 1
+        scale_vshiftnfb_curveshift = 1
+        scale_vshiftnsa_curveshift = 1
+        scale_vshiftnsb_curveshift = 1
+        scale_fkdr_conductances = 1
+        scale_skdr_conductances = 1
+        scale_gl_conductances = 1
         scale_ka_conductances = 1
+        scale_km_conductances = 1
+        scale_lca_conductances = 1
+        scale_nca_conductances = 1
+        scale_tca_conductances = 1
+        scale_sk_conductances = 1
         gbar_ht_ = 0 
         gbar_lt_ = 0
         scale_size_ = 1
-        scale_gpas_dg_ = 1
-        scale_sk_dg_ = 1
         scale_gabaa_ = 1
         scale_kir_ = 0
-        if (narg > 1) { scale_na_conductances = $2 }
-        if (narg > 2) { scale_kdr_conductances = $3 }
-        if (narg > 3) { scale_ka_conductances = $4 }
-        if (narg > 4) { gbar_ht_ = $5 }
-        if (narg > 5) { gbar_lt_ = $6 }
-        if (narg > 6) { scale_size_ = $7 }
-        if (narg > 7) { scale_gpas_dg_ = $8 } 
-        if (narg > 8) { scale_sk_dg_ = $9 }
-        if (narg > 9) { scale_gabaa_ = $10 }
-        if (narg > 10) { scale_kir_ = $11 }
+        if (narg > 1) { scale_bk_conductances = $2 }
+        if (narg > 2) { scale_na_conductances = $3 }
+        if (narg > 3) { scale_vshiftma_curveshift = $4 }
+        if (narg > 4) { scale_vshiftmb_curveshift = $5 }
+        if (narg > 5) { scale_vshiftha_curveshift = $6 }
+        if (narg > 6) { scale_vshifthb_curveshift = $7 }
+        if (narg > 7) { scale_vshiftnfa_curveshift = $8 }
+        if (narg > 8) { scale_vshiftnfb_curveshift = $9 }
+        if (narg > 9) { scale_vshiftnsa_curveshift = $10 }
+        if (narg > 10) { scale_vshiftnsb_curveshift = $11 }
+        if (narg > 11) { scale_fkdr_conductances = $12 }
+        if (narg > 12) { scale_skdr_conductances = $13 }
+        if (narg > 13) { scale_gl_conductances = $14 }
+        if (narg > 14) { scale_ka_conductances = $15 }
+        if (narg > 15) { scale_km_conductances = $16 }
+        if (narg > 16) { scale_lca_conductances = $17 }
+        if (narg > 17) { scale_nca_conductances = $18 }
+        if (narg > 18) { scale_tca_conductances = $19 }
+        if (narg > 19) { scale_sk_conductances = $20 }
+        if (narg > 20) { gbar_ht_ = $21 }
+        if (narg > 21) { gbar_lt_ = $22 }
+        if (narg > 22) { scale_size_ = $23 }
+        if (narg > 23) { scale_gabaa_ = $24 }
+        if (narg > 24) { scale_kir_ = $25 }
 
         // Run actual initialization 
         pre_list = new List()
@@ -104,7 +132,7 @@ begintemplate GranuleCell
         e_gabaa_ 	= -70.			// reversal potential GABAA
 
         // ***************** Parameters
-        g_pas_fit_ 	= 1.44e-05  * scale_gpas_dg_ 
+        g_pas_fit_ 	= 1.44e-05  * scale_gl_conductances
         gkbar_kir_fit_  = 1.44e-05 * scale_kir_
         ggabaabar_fit_  = 0.722e-05 * scale_gabaa_
 
@@ -149,62 +177,62 @@ begintemplate GranuleCell
                 gbar_LT = gbar_lt_
             Ra=Ra_fit_
             insert ichan2
-                vshiftma_ichan2 = 43                            // value Yim et al. 2015
-                vshiftmb_ichan2 = 15                            // value Yim et al. 2015
-                vshiftha_ichan2 = 65                            // value Yim et al. 2015
-                vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
-                vshiftnfa_ichan2 = 18                          // value Yim et al. 2015
-                vshiftnfb_ichan2 = 43                          // value Yim et al. 2015
-                vshiftnsa_ichan2 = 30                          // value Yim et al. 2015
-                vshiftnsb_ichan2 = 55                          // value Yim et al. 2015
+                vshiftma_ichan2 = 43  * scale_vshiftma_curveshift                         // value Yim et al. 2015
+                vshiftmb_ichan2 = 15  * scale_vshiftmb_curveshift                         // value Yim et al. 2015
+                vshiftha_ichan2 = 65  * scale_vshiftha_curveshift                           // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5  * scale_vshifthb_curveshift                         // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18  * scale_vshiftnfa_curveshift                         // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43  * scale_vshiftnfb_curveshift                         // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30  * scale_vshiftnsa_curveshift                       // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55  * scale_vshiftnsb_curveshift                        // value Yim et al. 2015
         }
 
         soma {insert ichan2  						
                 gnatbar_ichan2=0.12 * scale_na_conductances	    // value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.016 * scale_kdr_conductances 
-                gksbar_ichan2=0.006 * scale_kdr_conductances
+                gkfbar_ichan2=0.016 * scale_fkdr_conductances
+                gksbar_ichan2=0.006 * scale_skdr_conductances
                 gl_ichan2 = g_pas_fit_
                 el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
             insert ka 						
                 gkabar_ka=0.012 * scale_ka_conductances
             insert km
-                gbar_km = 0.001 * scale_kdr_conductances
+                gbar_km = 0.001 * scale_km_conductances
             insert nca  						
-                gncabar_nca=0.002  
+                gncabar_nca=0.002  * scale_nca_conductances
             insert lca 						
-                glcabar_lca=0.005
+                glcabar_lca=0.005 * scale_lca_conductances
             insert tca						
-                gcatbar_tca=0.000037
+                gcatbar_tca=0.000037 * scale_tca_conductances
             insert sk						
-                gskbar_sk=0.001  * scale_sk_dg_ 
+                gskbar_sk=0.001  * scale_sk_conductances
             insert bk 						
-                gkbar_bk=0.0006
+                gkbar_bk=0.0006 * scale_bk_conductances
             cm=cm_fit_
         } 
 
         forsec gcldend {insert ichan2
                 gnatbar_ichan2=0.018 * scale_na_conductances 				// value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.004 * scale_kdr_conductances
-                gksbar_ichan2=0.006 * scale_kdr_conductances
+                gkfbar_ichan2=0.004 * scale_fkdr_conductances
+                gksbar_ichan2=0.006 * scale_skdr_conductances
                 gl_ichan2 = g_pas_fit_
                 el_ichan2 = e_pas_fit_				// set leak reversal poti to gain Vrest of cell <ah>
             insert nca  // HAV-N- Ca channel
-                gncabar_nca=0.003  				// value Aradi & Holmes 1999 <ah>
+                gncabar_nca=0.003  			// value Aradi & Holmes 1999 <ah>
             insert lca 
                 glcabar_lca=0.0075
             insert tca
                 gcatbar_tca=0.000075
             insert sk
-                gskbar_sk=0.0004 * scale_sk_dg_
+                gskbar_sk=0.0004
             insert bk
-                gkbar_bk=0.0006 
+                gkbar_bk=0.0006
             cm=cm_fit_
         }
             
         forsec pdend {insert ichan2
                 gnatbar_ichan2=0.013 * scale_na_conductances				// value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.004 * scale_kdr_conductances
-                gksbar_ichan2=0.006 * scale_kdr_conductances
+                gkfbar_ichan2=0.004 * scale_fkdr_conductances
+                gksbar_ichan2=0.006 * scale_skdr_conductances
                 gl_ichan2 = g_pas_fit_ * (0.000063/0.00004)
                 el_ichan2 = e_pas_fit_Dend 			// see comment above <ah>
             insert nca  // HAV-N- Ca channel
@@ -214,7 +242,7 @@ begintemplate GranuleCell
             insert tca
                 gcatbar_tca=0.00025
             insert sk
-                gskbar_sk=0.0002  * scale_sk_dg_ 
+                gskbar_sk=0.0002
             insert bk
                 gkbar_bk=0.001 
             cm=cm_fit_*1.6
@@ -222,8 +250,8 @@ begintemplate GranuleCell
             
         forsec mdend {insert ichan2
                 gnatbar_ichan2=0.008 * scale_na_conductances				// value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.001 * scale_kdr_conductances
-                gksbar_ichan2=0.006 * scale_kdr_conductances
+                gkfbar_ichan2=0.001 * scale_fkdr_conductances
+                gksbar_ichan2=0.006 * scale_skdr_conductances
                 gl_ichan2 = g_pas_fit_ * (0.000063/0.00004)
                 el_ichan2 = e_pas_fit_Dend  			// see comment above <ah>
             insert nca  
@@ -233,7 +261,7 @@ begintemplate GranuleCell
             insert tca
                 gcatbar_tca=0.0005
             insert sk
-                gskbar_sk=0.0   * scale_sk_dg_
+                gskbar_sk=0.0   * scale_sk_conductances
             insert bk
                 gkbar_bk=0.0024
             cm=cm_fit_*1.6
@@ -241,8 +269,8 @@ begintemplate GranuleCell
 
         forsec ddend {insert ichan2
                 gnatbar_ichan2=0.0 * scale_na_conductances
-                gkfbar_ichan2=0.001 * scale_kdr_conductances
-                gksbar_ichan2=0.008 * scale_kdr_conductances
+                gkfbar_ichan2=0.001 * scale_fkdr_conductances
+                gksbar_ichan2=0.008 * scale_skdr_conductances
                 gl_ichan2 = g_pas_fit_ * (0.000063/0.00004)
                 el_ichan2 = e_pas_fit_Dend  			// see comment above <ah>
             insert nca  
@@ -252,7 +280,7 @@ begintemplate GranuleCell
             insert tca
                 gcatbar_tca=0.001
             insert sk
-                gskbar_sk=0.0 * scale_sk_dg_ 
+                gskbar_sk=0.0 * scale_sk_conductances
             insert bk
                 gkbar_bk=0.0024
             cm=cm_fit_*1.6

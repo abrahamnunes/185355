@@ -1,4 +1,5 @@
-// Load cell templates and network 
+N_RUNS = 1
+// Load cell templates and network
 err_ = load_file("objects/GC.hoc")
 err_ = load_file("objects/BC.hoc")
 err_ = load_file("objects/MC.hoc")
@@ -7,24 +8,39 @@ err_ = load_file("objects/PP.hoc")
 err_ = load_file("objects/DentateGyrus.hoc")
 
 // Instantiate cell objects and labels
-objref hc, lr, nr
-strdef hclab, lrlab, nrlab 
+objref hcc, hcl, lrc, lrl, nrc, nrl
+strdef hcclab, hcllab, lrclab, lrllab, nrclab, nrllab
 
 // Do 10 Runs for each network setting
-for random_state = 1, 10 {
-    sprint(hclab, "%s-%d", "HC", random_state)
-    sprint(lrlab, "%s-%d", "LR", random_state)
-    sprint(nrlab, "%s-%d", "NR", random_state)
-    hc = new DentateGyrus(hclab, random_state, "HC")
-    lr = new DentateGyrus(lrlab, random_state, "LR")
-    nr = new DentateGyrus(nrlab, random_state, "NR")
+for random_state = 1, N_RUNS {
+    sprint(hcclab, "%s-%d", "HC_CTRL", random_state)
+    //sprint(hcllab, "%s-%d", "HC_LITM", random_state)
+    //sprint(lrclab, "%s-%d", "LR_CTRL", random_state)
+    //sprint(lrllab, "%s-%d", "LR_LITM", random_state)
+    //sprint(nrclab, "%s-%d", "NR_CTRL", random_state)
+    //sprint(nrllab, "%s-%d", "NR_LITM", random_state)
+    hcc = new DentateGyrus(hcclab, random_state, "HC_CTRL")
+    //hcl = new DentateGyrus(hcllab, random_state, "HC_LITM")
+    //lrc = new DentateGyrus(lrclab, random_state, "LR_CTRL")
+    //lrl = new DentateGyrus(lrllab, random_state, "LR_LITM")
+    //nrc = new DentateGyrus(nrclab, random_state, "NR_CTRL")
+    //nrl = new DentateGyrus(nrllab, random_state, "NR_LITM")
 
-    print "RUNNING DENTATE GYRUS ", hclab
-    hc.run()
+    print "RUNNING DENTATE GYRUS ", hcclab
+    hcc.run()
 
-    print "RUNNING DENTATE GYRUS ", lrlab
-    lr.run() 
+    //print "RUNNING DENTATE GYRUS ", hcllab
+    //hcl.run()
 
-    print "RUNNING DENTATE GYRUS ", nrlab
-    nr.run()
+    //print "RUNNING DENTATE GYRUS ", lrclab
+    //lrc.run()
+
+    //print "RUNNING DENTATE GYRUS ", lrllab
+    //lrl.run()
+
+    //print "RUNNING DENTATE GYRUS ", nrclab
+    //nrc.run()
+
+    //print "RUNNING DENTATE GYRUS ", nrllab
+    //nrl.run()
 }
