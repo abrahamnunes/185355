@@ -228,9 +228,9 @@ begintemplate DentateGyrus
             - Generalize to allow these to vary
         */
         ngcell = 500		    // number of GCs 
-        nbcell = 6              // number of BCs (Samathakumar 2005)
+        nbcell = 6              // number of BCs (Santhakumar 2005)
         nmcell = 15		        // number of MCs	
-        nhcell = 6              // number of HCs (Samathakumar 2005)
+        nhcell = 6              // number of HCs (Santhakumar 2005)
         npp = 100               // ECII Neurons (Myers and Scharfman, 2009)
         nmcell_per_lamella = 3  // Number of mossy cells per lamella
 
@@ -335,6 +335,34 @@ begintemplate DentateGyrus
         Notes: 
             - We can change HT and LT later.
         */
+
+        // Default parameters
+        if (strcmp($s1, "DEFAULT") ==0) {
+            scale_bk_conductances = 1
+            scale_na_conductances = 1
+            scale_vshiftma_curveshift = 1
+            scale_vshiftmb_curveshift = 1
+            scale_vshiftha_curveshift = 1
+            scale_vshifthb_curveshift = 1
+            scale_vshiftnfa_curveshift = 1
+            scale_vshiftnfb_curveshift = 1
+            scale_vshiftnsa_curveshift = 1
+            scale_vshiftnsb_curveshift = 1
+            scale_fkdr_conductances = 1
+            scale_skdr_conductances = 1
+            scale_gl_conductances = 1
+            scale_ka_conductances = 1
+            scale_km_conductances = 1
+            scale_lca_conductances = 1
+            scale_nca_conductances = 1
+            scale_tca_conductances = 1
+            scale_sk_conductances = 1
+            gbar_ht_ = 1
+            gbar_lt_ = 1
+            scale_size_ = 1
+            scale_gabaa_ = 1
+            scale_kir_ = 1
+        }
 
         // Healthy neurons, control condition
         if (strcmp($s1, "HC_CTRL") == 0) {

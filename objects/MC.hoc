@@ -33,8 +33,9 @@ objref syn, pre_list, fl
 //to include steady state current injection
 nst=1
 objectvar stim[nst]
-double stimdur[nst], stimdel[nst], stimamp[nst]
-public stim, stimdur, stimamp, stimdel
+public stim
+//double stimdur[nst], stimdel[nst], stimamp[nst]
+//public stim, stimdur, stimamp, stimdel
 
 
 objref syn
@@ -117,21 +118,48 @@ proc temp() {
 
 	soma {insert ichan2  
 	gnatbar_ichan2=0.12  
-	gkfbar_ichan2=0.0005  
+	gkfbar_ichan2=0.0005
 	gl_ichan2 = 0.000011
-	cm=0.6} 
+	cm=0.6
+	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+    }
 
 	forsec pdend {insert ichan2
 	gnatbar_ichan2=0.12  
 	gkfbar_ichan2=0.0005
 	gl_ichan2 = 0.000044
-	cm=2.4}
+	cm=2.4
+	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+    }
 		
 	forsec ddend {insert ichan2
 	gnatbar_ichan2=0.0
 	gkfbar_ichan2=0.00
 	gl_ichan2 = 0.000044
-	cm=2.4}
+	cm=2.4
+	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+    }
 		
 	connect mcdend1[0](0), soma(1)
 	connect mcdend2[0](0), soma(1)
@@ -144,12 +172,13 @@ proc temp() {
 
 	forall {Ra=100}
 	forall {
-        		ena 		= 	50		        // ena was unified from enat=55 (BC, HIPP, MC) and enat=45 (GC) in Santhakumar et al. (2005) <ah>
-                        ek		=	-90		        // simplified ekf=eks=ek=esk; note the eK was erroneously reported as -105mV in the Yim et al. 2015 <ah>
-			ehyf		=	-40
-			ehys		=	-40
-			el_ichan2	= 	-59
-                        cao_ccanl	=	2 }
+        		ena     = 	50		        // ena was unified from enat=55 (BC, HIPP, MC) and enat=45 (GC) in Santhakumar et al. (2005) <ah>
+                ek		=	-90		        // simplified ekf=eks=ek=esk; note the eK was erroneously reported as -105mV in the Yim et al. 2015 <ah>
+			    ehyf		=	-40
+			    ehys		=	-40
+			    el_ichan2	= 	-59
+                cao_ccanl	=	2
+                elca        =  130}         // missing from Yim et al., but present in Santhakumar
 
 }
 

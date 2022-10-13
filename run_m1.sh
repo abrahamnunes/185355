@@ -11,6 +11,7 @@ mkdir figures/voltage-tracings
 mkdir figures/fi-curves
 mkdir figures/op-output
 mkdir figures/manual-adjust
+mkdir figures/mossycell
 
 # Get FI Curves
 

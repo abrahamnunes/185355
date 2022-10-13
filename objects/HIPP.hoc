@@ -105,19 +105,46 @@ proc temp() {
 	gnatbar_ichan2=0.2
 	gkfbar_ichan2=0.006  
 	gl_ichan2 = 0.000036
-	cm=1.1} 
+	cm=1.1
+	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+    }
 
 	forsec pdend {insert ichan2
 	gnatbar_ichan2=0.2  
 	gkfbar_ichan2=0.006
 	gl_ichan2 = 0.000036
-	cm=1.1}
+	cm=1.1
+	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+    }
 		
 	forsec ddend {insert ichan2
 	gnatbar_ichan2=0.0
 	gkfbar_ichan2=0.00
 	gl_ichan2 = 0.000036
-	cm=1.1}
+	cm=1.1
+	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+    }
 
 	connect hcdend1[0](0), soma(1)
 	connect hcdend2[0](0), soma(1)
