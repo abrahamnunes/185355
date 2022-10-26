@@ -97,68 +97,70 @@ proc temp() {
 	mcdend4 [3] {nseg=1 L=50 diam=1} 	
 
     
-	forall {
+	forsec all {
 		insert ccanl
-	catau_ccanl = 10
-	caiinf_ccanl = 5.e-6
+	        catau_ccanl = 10
+	        caiinf_ccanl = 5.e-6
 		insert ka
-	gkabar_ka=0.00001
+	        gkabar_ka=1.650234883413953e-05              // fitted to Howard et al. 2007, previous 0.00001 Yim et al., 2015
 		insert nca  
-	gncabar_nca=0.00008  
+	        gncabar_nca=3.0246490314670187e-05           // fitted to Howard et al. 2007, previous 0.00008 Yim et al., 2015
 		insert lca 
-	glcabar_lca=0.0006
+	        glcabar_lca=0.00017469257304634966           // fitted to Howard et al. 2007, previous 0.0006 Yim et al., 2015
 		insert sk
-	gskbar_sk=0.016
+	        gskbar_sk=0.022809187461813662               // fitted to Howard et al. 2007, previous 0.016 Yim et al., 2015
 		insert bk
-	gkbar_bk=0.0165
+	        gkbar_bk=0.03039610718265275                 // fitted to Howard et al. 2007, previous 0.0165 Yim et al., 2015
 		insert ih 
-	ghyfbar_ih=0.000005
-	ghysbar_ih=0.000005
+	        ghyfbar_ih=9.297236447233174e-07             // fitted to Howard et al. 2007, previous 0.000005 Yim et al., 2015
+	        ghysbar_ih=5.9517273494970865e-06            // fitted to Howard et al. 2007, previous 0.000005 Yim et al., 2015
 	}
 
-	soma {insert ichan2  
-	gnatbar_ichan2=0.12  
-	gkfbar_ichan2=0.0005
-	gl_ichan2 = 0.000011
-	cm=0.6
-	vshiftma_ichan2 = 43                           // value Yim et al. 2015
-    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
-    vshiftha_ichan2 = 65                             // value Yim et al. 2015
-    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
-    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
-    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
-    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
-    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+	soma {insert ichan2
+        gnatbar_ichan2=0.055866501682604486              // fitted to Howard et al. 2007, previous 0.12 Yim et al., 2015
+        gkfbar_ichan2=0.0286296712742244                 // fitted to Howard et al. 2007, previous 0.0005 Yim et al., 2015
+        gksbar_ichan2=0.014713327547369214               // added + fitted, Howard et al. 2007
+        gl_ichan2 = 8.0500055186908e-06                  // fitted to Howard et al. 2007, previous 0.000011 Yim et al., 2015
+        cm=0.6
+        vshiftma_ichan2 = 58.5                           // fitted to Howard et al. 2007 + manual shift for excitability, previous 43 Yim et al., 2015
+        vshiftmb_ichan2 = 27.03685981762697              // fitted to Howard et al. 2007, previous 15 Yim et al., 2015
+        vshiftha_ichan2 = 124.5                          // fitted to Howard et al. 2007 + manual shift for excitability, previous 65 Yim et al., 2015
+        vshifthb_ichan2 = 18.616547074320465             // fitted to Howard et al. 2007, previous 12.5 Yim et al., 2015
+        vshiftnfa_ichan2 = 30.701653087965823            // fitted to Howard et al. 2007, previous 18 Yim et al., 2015
+        vshiftnfb_ichan2 = 24.156010322453657            // fitted to Howard et al. 2007, previous 43 Yim et al., 2015
+        vshiftnsa_ichan2 = 44.694885585078325            // fitted to Howard et al. 2007, previous 30 Yim et al., 2015
+        vshiftnsb_ichan2 = 17.74053364029013             // fitted to Howard et al. 2007, previous 55 Yim et al., 2015
     }
 
 	forsec pdend {insert ichan2
-	gnatbar_ichan2=0.12  
-	gkfbar_ichan2=0.0005
-	gl_ichan2 = 0.000044
-	cm=2.4
-	vshiftma_ichan2 = 43                           // value Yim et al. 2015
-    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
-    vshiftha_ichan2 = 65                             // value Yim et al. 2015
-    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
-    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
-    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
-    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
-    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+        gnatbar_ichan2=0.12
+        gkfbar_ichan2=0.0005
+        gksbar_ichan2=0.00015                           // added, Howard et al. 2007
+        gl_ichan2 = 0.000044
+        cm=2.4
+        vshiftma_ichan2 = 43                           // value Yim et al. 2015
+        vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+        vshiftha_ichan2 = 65                             // value Yim et al. 2015
+        vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+        vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+        vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+        vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+        vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
     }
 		
 	forsec ddend {insert ichan2
-	gnatbar_ichan2=0.0
-	gkfbar_ichan2=0.00
-	gl_ichan2 = 0.000044
-	cm=2.4
-	vshiftma_ichan2 = 43                           // value Yim et al. 2015
-    vshiftmb_ichan2 = 15                           // value Yim et al. 2015
-    vshiftha_ichan2 = 65                             // value Yim et al. 2015
-    vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
-    vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
-    vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
-    vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
-    vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
+        gnatbar_ichan2=0.0
+        gkfbar_ichan2=0.00
+        gl_ichan2 = 0.000044
+        cm=2.4
+        vshiftma_ichan2 = 43                           // value Yim et al. 2015
+        vshiftmb_ichan2 = 15                           // value Yim et al. 2015
+        vshiftha_ichan2 = 65                             // value Yim et al. 2015
+        vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+        vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
+        vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+        vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+        vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
     }
 		
 	connect mcdend1[0](0), soma(1)

@@ -12,6 +12,7 @@ matplotlib.rcParams.update({'font.size': 12})
 
 matplotlib.use('Agg')  # hopefully this works over ssh
 import matplotlib.pyplot as plt
+import pandas as pd
 import pylab
 from random import Random  # TODO replace with numpy rand f'n.  pseudorandom number generation
 from inspyred import ec  # evolutionary algorithm
@@ -34,18 +35,32 @@ mc = netparams.importCellParams(
     conds={"cellType": "MossyCell", "cellModel": "MossyCell"},
     fileName="objects/MC.hoc",
     cellName="MossyCell",
-    cellArgs=[1],
+    #cellArgs=[1],
     importSynMechs=False
 )
 
+free_params = {
+    'bk': ['gkbar'],  # big conductance, calcium-activated potassium channel
+    'ichan2': ['gnatbar', 'vshiftma', 'vshiftmb', 'vshiftha', 'vshifthb', 'vshiftnfa', 'vshiftnfb', 'vshiftnsa',
+               'vshiftnsb',
+               'gkfbar', 'gksbar', 'gl'],  # sodium, potassium parameters
+    'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
+    'lca': ['glcabar'],  # l-type calcium
+    'nca': ['gncabar'],  # n-type calcium
+    'sk': ['gskbar'],  # small conductance potassium channel
+    'ih': ['ghyfbar', 'ghysbar']  # HCN channel
+}
 
-# with open('mc.txt', 'w') as f:
-# f.write(str(mc))
+with open('figures/mossycell/mc.txt', 'w') as f:
+    f.write(str(mc))
+
 
 class testparam(object):
     def __init__(self,
-                 cell):
+                 cell,
+                 free_params):
         self.cell_dict = {"secs": cell["secs"]}
+        self.free_params = free_params
 
     def curr_inj(self, current, delay=0, duration=1000):
         iclamp = IClamp(self.cell_dict, delay=delay, duration=duration, T=duration + delay * 2)
@@ -64,7 +79,7 @@ class testparam(object):
 
     def sim_fi(self):
         ep = ElectrophysiologicalPhenotype(self.cell_dict, noise=False)
-        self.simfi = ep.compute_fi_curve(ilow=0, ihigh=0.4, n_steps=11, delay=0, duration=1000)
+        self.simfi = ep.compute_fi_curve(ilow=-0.4, ihigh=0.4, n_steps=110, delay=0, duration=1000)
         return self.simfi
 
     def data_fi(self):
@@ -89,36 +104,49 @@ class testparam(object):
         self.dataiv_k = np.array(dataiv)
         return self.dataiv_k
 
+    def optimized_cell(self):
+        mossyopt = pd.read_csv("data/parameters/parameters_mossy.csv")
+        mossyparams = mossyopt['Cell_0'].to_numpy()
+        j = 0
+        for key in self.free_params.keys():
+            for val in self.free_params[key]:
+                self.cell_dict['secs']['soma']['mechs'][key][val] = mossyparams[j]
+                j = j + 1
+        epmc_opt = ElectrophysiologicalPhenotype(self.cell_dict, noise=False)
+        mcFI_opt = epmc_opt.compute_fi_curve(ilow=0, ihigh=0.33, n_steps=120, delay=0, duration=1500)
+        return mcFI_opt
+
     def manual_adjust(self):
         baseline = self.sim_fi()
         baselineivna = self.volt_inj_na()
         baselineivk = self.volt_inj_k()
 
-        self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] = 0.007899804031142425  # 0.0006
-
+        self.cell_dict['secs']['soma']['mechs']['bk']['gkbar'] = 0.0165 #0.03039610718265275  # 0.0006
         # --- SODIUM
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['gnatbar'] = 0.05417360263861594  # 0.12
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftma'] = 29.745138281716898  # 43.0
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftmb'] = 22.300204825413665  # 15.0
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftha'] = 100.06408436285494  # 65.0  # of interest
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshifthb'] = 14.879318373742715  # 12.5  # of interest
-        # self.cell_dict['secs']['soma']['ions']['na']['e'] = 60 #50
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['gnatbar'] =  0.12 #0.055866501682604486
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftma'] = 43 #59  # 25.729832752129596  # 43.0
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftmb'] = 15 #27.03685981762697  # 15.0
+        self.cell_dict['secs']['soma']['mechs']['ichan2'][
+            'vshiftha'] = 65 #125  # 125.28480038847258 #125.28480038847258  # 65.0  # of interest
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshifthb'] = 12.5 #18.616547074320465  # 12.5  # of interest
 
         # --- POTASSIUM
 
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['gkfbar'] = 0.04 #0.03669442002304013  # 0.0005 # 0.001002156114034962 #0.016
-        #self.cell_dict['secs']['soma']['mechs']['ichan2']['gksbar'] = 0.04  # 0.006 # I wonder why this is 0..
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfa'] = 33.379630745362796  # 18.0
-        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfb'] = 39.07305857168896  # 125.4040070771422 #43
-        #self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsa'] = 30 #54.1958679173991  # 30
-       #self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsb'] = 55 #76.16308645928503  # 55
+        self.cell_dict['secs']['soma']['mechs']['ichan2'][
+            'gkfbar'] = 0.0005 #0.0286296712742244  # 0.0005 # 0.001002156114034962 #0.016
+        self.cell_dict['secs']['soma']['mechs']['ichan2'][
+            'gksbar'] = 0.0 #0.014713327547369214  # 0.006 #
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfa'] = 18 #30.701653087965823  # 18.0
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnfb'] = 43 #24.156010322453657  # 125.4040070771422 #43
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsa'] = 30 #44.694885585078325  # 54.1958679173991  # 30
+        self.cell_dict['secs']['soma']['mechs']['ichan2']['vshiftnsb'] = 55 #17.74053364029013  # 76.16308645928503  # 55
 
-        self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = 1.1267183482127792e-05  # 0.012
-        self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = 0.0010464533176596695  # 0.005
-        self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = 8.000000000000001e-06  # 0.002
-        self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = 0.006914512327323811  # 0.001
-        self.cell_dict['secs']['soma']['mechs']['ih']['ghyfbar'] = 8.457243573091151e-07
-        self.cell_dict['secs']['soma']['mechs']['ih']['ghysbar'] = 3.540518744389185e-06
+        self.cell_dict['secs']['soma']['mechs']['ka']['gkabar'] = 1e-05 #1.650234883413953e-05  # 0.012
+        self.cell_dict['secs']['soma']['mechs']['lca']['glcabar'] = 0.0006 #0.00017469257304634966  # 0.005
+        self.cell_dict['secs']['soma']['mechs']['nca']['gncabar'] = 8e-05 #3.0246490314670187e-05  # 0.002
+        self.cell_dict['secs']['soma']['mechs']['sk']['gskbar'] = 0.016 #0.022809187461813662  # 0.001
+        self.cell_dict['secs']['soma']['mechs']['ih']['ghyfbar'] = 5e-06 #9.297236447233174e-07
+        self.cell_dict['secs']['soma']['mechs']['ih']['ghysbar'] = 5e-06 #5.9517273494970865e-06
         shifted = self.sim_fi()
         shiftedivna = self.volt_inj_na()
         shiftedivk = self.volt_inj_k()
@@ -128,9 +156,11 @@ class testparam(object):
         dataivk = self.data_iv_k()
 
         datafi = self.data_fi()
+        optimized_cell = self.optimized_cell()
 
         plt.plot(baseline['I'], baseline['F'], label="baseline")
         plt.plot(shifted['I'], shifted['F'], label="manual fit")
+        plt.plot(optimized_cell['I'], optimized_cell['F'], label="optimized")
         plt.plot(datafi[0, :], datafi[1, :], label="data")
         plt.legend()
         plt.savefig("figures/mossycell/ifvsif.jpeg")
@@ -150,5 +180,27 @@ class testparam(object):
         plt.savefig("figures/mossycell/MOSSYcurrinj.jpeg")
 
 
-TestParam = testparam(mc)
+TestParam = testparam(mc, free_params)
 TestParam.manual_adjust()
+
+'''
+goodparams = [0.03039610718265275,  # ['bk']['gkbar']
+              0.05753540741645549,  # ['ichan2']['gnatbar']
+              59,  # ['ichan2']['vshiftma']
+              27.03685981762697,  # ['ichan2']['vshiftmb']
+              125,  # ['ichan2']['vshiftha']
+              21.692365618111857,  # ['ichan2']['vshifthb']
+              0.039537232546728474,  # ['ichan2']['gkfbar']
+              0.00813724848118442,  # ['ichan2']['gksbar']
+              30.701653087965823,  # ['ichan2']['vshiftnfa']
+              24.156010322453657,  # ['ichan2']['vshiftnfb']
+              44.694885585078325,  # ['ichan2']['vshiftnsa']
+              17.74053364029013,  # ['ichan2']['vshiftnsb']
+              1.650234883413953e-05,  # ['ka']['gkabar']
+              0.0007649406562098781,  # ['lca']['glcabar']
+              0.0001476092734232904,  # ['nca']['gncabar']
+              0.022809187461813662,  # ['sk']['gskbar']
+              9.297236447233174e-07,  # ['ih']['ghyfbar']
+              5.9517273494970865e-06  # ['ih']['ghysbar']
+              ]
+'''

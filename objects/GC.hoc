@@ -176,15 +176,6 @@ begintemplate GranuleCell
             insert LT
                 gbar_LT = gbar_lt_
             Ra=Ra_fit_
-            insert ichan2
-                vshiftma_ichan2 = 43  * scale_vshiftma_curveshift                         // value Yim et al. 2015
-                vshiftmb_ichan2 = 15  * scale_vshiftmb_curveshift                         // value Yim et al. 2015
-                vshiftha_ichan2 = 65  * scale_vshiftha_curveshift                           // value Yim et al. 2015
-                vshifthb_ichan2 = 12.5  * scale_vshifthb_curveshift                         // value Yim et al. 2015
-                vshiftnfa_ichan2 = 18  * scale_vshiftnfa_curveshift                         // value Yim et al. 2015
-                vshiftnfb_ichan2 = 43  * scale_vshiftnfb_curveshift                         // value Yim et al. 2015
-                vshiftnsa_ichan2 = 30  * scale_vshiftnsa_curveshift                       // value Yim et al. 2015
-                vshiftnsb_ichan2 = 55  * scale_vshiftnsb_curveshift                        // value Yim et al. 2015
         }
 
         soma {insert ichan2  						
@@ -193,6 +184,14 @@ begintemplate GranuleCell
                 gksbar_ichan2=0.006 * scale_skdr_conductances
                 gl_ichan2 = g_pas_fit_
                 el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
+                vshiftma_ichan2 = 43  * scale_vshiftma_curveshift                         // value Yim et al. 2015
+                vshiftmb_ichan2 = 15  * scale_vshiftmb_curveshift                         // value Yim et al. 2015
+                vshiftha_ichan2 = 65  * scale_vshiftha_curveshift                           // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5  * scale_vshifthb_curveshift                         // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18  * scale_vshiftnfa_curveshift                         // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43  * scale_vshiftnfb_curveshift                         // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30  * scale_vshiftnsa_curveshift                       // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55  * scale_vshiftnsb_curveshift                        // value Yim et al. 2015
             insert ka 						
                 gkabar_ka=0.012 * scale_ka_conductances
             insert km
@@ -211,11 +210,19 @@ begintemplate GranuleCell
         } 
 
         forsec gcldend {insert ichan2
-                gnatbar_ichan2=0.018 * scale_na_conductances 				// value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.004 * scale_fkdr_conductances
-                gksbar_ichan2=0.006 * scale_skdr_conductances
+                gnatbar_ichan2=0.018 				// value Aradi & Holmes 1999 <ah>
+                gkfbar_ichan2=0.004
+                gksbar_ichan2=0.006
                 gl_ichan2 = g_pas_fit_
                 el_ichan2 = e_pas_fit_				// set leak reversal poti to gain Vrest of cell <ah>
+                vshiftma_ichan2 = 43                          // value Yim et al. 2015
+                vshiftmb_ichan2 = 15                          // value Yim et al. 2015
+                vshiftha_ichan2 = 65                            // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18                         // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30                        // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55                     // value Yim et al. 2015
             insert nca  // HAV-N- Ca channel
                 gncabar_nca=0.003  			// value Aradi & Holmes 1999 <ah>
             insert lca 
@@ -230,11 +237,19 @@ begintemplate GranuleCell
         }
             
         forsec pdend {insert ichan2
-                gnatbar_ichan2=0.013 * scale_na_conductances				// value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.004 * scale_fkdr_conductances
-                gksbar_ichan2=0.006 * scale_skdr_conductances
+                gnatbar_ichan2=0.013 				// value Aradi & Holmes 1999 <ah>
+                gkfbar_ichan2=0.004
+                gksbar_ichan2=0.006
                 gl_ichan2 = g_pas_fit_ * (0.000063/0.00004)
                 el_ichan2 = e_pas_fit_Dend 			// see comment above <ah>
+                vshiftma_ichan2 = 43                          // value Yim et al. 2015
+                vshiftmb_ichan2 = 15                          // value Yim et al. 2015
+                vshiftha_ichan2 = 65                          // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5                        // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18                         // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43                         // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30                         // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
             insert nca  // HAV-N- Ca channel
                 gncabar_nca=0.001  				// value Aradi & Holmes 1999 <ah>
             insert lca 
@@ -249,11 +264,19 @@ begintemplate GranuleCell
         }
             
         forsec mdend {insert ichan2
-                gnatbar_ichan2=0.008 * scale_na_conductances				// value Aradi & Holmes 1999 <ah>
-                gkfbar_ichan2=0.001 * scale_fkdr_conductances
-                gksbar_ichan2=0.006 * scale_skdr_conductances
+                gnatbar_ichan2=0.008 				// value Aradi & Holmes 1999 <ah>
+                gkfbar_ichan2=0.001
+                gksbar_ichan2=0.006
                 gl_ichan2 = g_pas_fit_ * (0.000063/0.00004)
                 el_ichan2 = e_pas_fit_Dend  			// see comment above <ah>
+                vshiftma_ichan2 = 43                          // value Yim et al. 2015
+                vshiftmb_ichan2 = 15                          // value Yim et al. 2015
+                vshiftha_ichan2 = 65                          // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5                        // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18                         // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43                         // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30                         // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55                         // value Yim et al. 2015
             insert nca  
                 gncabar_nca=0.001  				// value Aradi & Holmes 1999 <ah>
             insert lca 
@@ -268,11 +291,19 @@ begintemplate GranuleCell
         }
 
         forsec ddend {insert ichan2
-                gnatbar_ichan2=0.0 * scale_na_conductances
-                gkfbar_ichan2=0.001 * scale_fkdr_conductances
-                gksbar_ichan2=0.008 * scale_skdr_conductances
+                gnatbar_ichan2=0.0
+                gkfbar_ichan2=0.001
+                gksbar_ichan2=0.008
                 gl_ichan2 = g_pas_fit_ * (0.000063/0.00004)
                 el_ichan2 = e_pas_fit_Dend  			// see comment above <ah>
+                vshiftma_ichan2 = 43                        // value Yim et al. 2015
+                vshiftmb_ichan2 = 15                        // value Yim et al. 2015
+                vshiftha_ichan2 = 65                        // value Yim et al. 2015
+                vshifthb_ichan2 = 12.5                      // value Yim et al. 2015
+                vshiftnfa_ichan2 = 18                       // value Yim et al. 2015
+                vshiftnfb_ichan2 = 43                       // value Yim et al. 2015
+                vshiftnsa_ichan2 = 30                       // value Yim et al. 2015
+                vshiftnsb_ichan2 = 55                      // value Yim et al. 2015
             insert nca  
                 gncabar_nca=0.001  				// value Aradi & Holmes 1999 <ah>
             insert lca 

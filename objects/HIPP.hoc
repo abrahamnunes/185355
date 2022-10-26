@@ -89,7 +89,7 @@ proc temp() {
 		insert ka
 	gkabar_ka=0.0008
 		insert nca  
-	gncabar_nca=0.0  
+	gncabar_nca=0.0008
 		insert lca
 	glcabar_lca=0.0015
 		insert sk
@@ -103,12 +103,13 @@ proc temp() {
 
 	soma {insert ichan2  
 	gnatbar_ichan2=0.2
-	gkfbar_ichan2=0.006  
+	gkfbar_ichan2=0.006
+	gksbar_ichan2=0.001                             // added in
 	gl_ichan2 = 0.000036
 	cm=1.1
-	vshiftma_ichan2 = 43                           // value Yim et al. 2015
+	vshiftma_ichan2 = 58                           // shifted for excitability, original 43 (Yim et al. 2015)
     vshiftmb_ichan2 = 15                           // value Yim et al. 2015
-    vshiftha_ichan2 = 65                             // value Yim et al. 2015
+    vshiftha_ichan2 = 82                             // shifted for excitability, original 65 (Yim et al. 2015)
     vshifthb_ichan2 = 12.5                          // value Yim et al. 2015
     vshiftnfa_ichan2 = 18                           // value Yim et al. 2015
     vshiftnfb_ichan2 = 43                           // value Yim et al. 2015
@@ -155,14 +156,15 @@ proc temp() {
 	for i=1,2 {connect hcdend3[i](0), hcdend3[i-1](1)}
 	for i=1,2 {connect hcdend4[i](0), hcdend4[i-1](1)}
 
-	forall {Ra=100}
+	forall {Ra=214}                     // value Degro et al., 2022
 	forall {
-        	ena 		= 	50        	// ena was unified from enat=55 (BC, HIPP, MC) and enat=45 (GC) in Santhakumar et al. (2005) <ah>
+        	ena 		= 	55        	// ena was unified from enat=55 (BC, HIPP, MC) and enat=45 (GC) in Santhakumar et al. (2005) <ah>
                 ek		=	-90          	// simplified ekf=eks=ek=esk; note the eK was erroneously reported as -105mV in the Yim et al. 2015 <ah>
                 el_ichan2 	=	-70.45
 		ehyf		=	-40
 		ehys		=	-40
-                cao_ccanl	=	2 }
+                cao_ccanl	=	2
+                elca = 130}              // Re-added. Missing Yim et al., 2015, present in Santhakumar 2005.
 		}
 
 // Defining synapses on to HIPP cells

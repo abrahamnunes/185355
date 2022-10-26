@@ -48,7 +48,7 @@ free_params = {
     'bk': ['gkbar'],  # big conductance, calcium-activated potassium channel
     'ichan2': ['gnatbar', 'vshiftma', 'vshiftmb', 'vshiftha', 'vshifthb', 'vshiftnfa', 'vshiftnfb', 'vshiftnsa',
                'vshiftnsb',
-               'gkfbar', 'gl'],  # sodium, potassium parameters
+               'gkfbar', 'gksbar', 'gl'],  # sodium, potassium parameters
     'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
     'lca': ['glcabar'],  # l-type calcium
     'nca': ['gncabar'],  # n-type calcium
@@ -213,16 +213,16 @@ class testparam(object):
         # self.minParamValues = [0.5 * param for param in self.baseline]  # 0.5 best for IF, Na
         # self.maxParamValues = [3.0 * param for param in self.baseline]  # 3.0 best for IF, Na
 
-        self.minParamValues = [(0.0165 * 0.1), (0.05 * 0.8), (30.0 * 0.8), (22 * 0.8), (100 * 0.8), (15 * 0.8),
-                               (18.0 * 0.1), (43.0 * 0.1), (30.0 * 0.1), (55.0 * 0.1), (0.020 * 0.8), (1.1e-05 * 0.1),
+        self.minParamValues = [(0.0165 * 0.1), (0.05 * 0.8), (60 * 0.8), (22 * 0.8), (100 * 0.8), (15 * 0.8),
+                               (18.0 * 0.1), (43.0 * 0.1), (30.0 * 0.1), (55.0 * 0.1), (0.03 * 0.8), (0.01 * 0.2), (1.1e-05 * 0.1),
                                (1e-05 * 0.1), (0.0006 * 0.1), (8e-05 * 0.1), (0.016 * 0.1),
-                               (5e-06 * 0.1), (5e-06 * 0.1),
+                               (5e-06 * 0.1), (5e-06 * 0.1)
                                ]
 
-        self.maxParamValues = [(0.0165 * 2.0), (0.05 * 1.2), (30.0 * 1.5), (22 * 1.5), (100 * 1.5), (15 * 1.5),
-                               (18.0 * 2.0), (43.0 * 2.0), (30.0 * 2.0), (55.0 * 2.0), (0.03 * 1.5), (1.1e-05 * 2.0),
+        self.maxParamValues = [(0.0165 * 2.0), (0.05 * 1.2), (60 * 1.5), (22 * 1.5), (100 * 1.5), (15 * 1.5),
+                               (18.0 * 2.0), (43.0 * 2.0), (30.0 * 2.0), (55.0 * 2.0), (0.03 * 1.5), (0.01 * 1.8), (1.1e-05 * 2.0),
                                (1e-05 * 2.0), (0.0006 * 2.0), (8e-05 * 2.0), (0.016 * 2.0),
-                               (5e-06 * 2.0), (5e-06 * 2.0),
+                               (5e-06 * 2.0), (5e-06 * 2.0)
                                ]
 
         # SET UP EVOLUTIONARY COMPUTATION ----------------------

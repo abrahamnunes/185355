@@ -6,9 +6,10 @@ include("utilities.jl");
 default(show=false)
 
 # HYPERPARAMS
-n_runs = 1
+n_runs = 3
 patterns = 0:12
-labels = ["HC_CTRL", "HC_LITM", "LR_CTRL", "LR_LITM", "NR_CTRL", "NR_LITM"]
+#labels = ["HC_CTRL", "LR_CTRL", "NR_CTRL"] #, "HC_LITM", "LR_CTRL", "LR_LITM", "NR_CTRL", "NR_LITM"]
+labels = ["HC_LITM", "LR_LITM", "NR_LITM"]
 fig_ext = ".png"
 
 # CREATE NECESSARY DIRECTORIES 
@@ -22,9 +23,9 @@ populations = Dict(
     "HIPP" => [521, 527]
 )
 
-for run ∈ 1:n_runs
+for run_ ∈ 1:n_runs
     for i ∈ 1:length(labels)
-        spikes = load_spike_files(patterns, labels[i]*"-$run", populations)
+        spikes = load_spike_files(patterns, labels[i]*"-$run_", populations)
 
         # CREATE RASTER PLOTS
         for p ∈ unique(spikes.Pattern)
@@ -39,7 +40,7 @@ for run ∈ 1:n_runs
                 #end
             end
             fig = plot(reverse(plots)..., layout=grid(5, 1, heights=[0.15, 0.15, 0.15, 0.4, 0.15]), size=(400, 500))
-            savefig(fig, "figures/raster-plots/raster-"*string(p)*"-"*labels[i]*"-$run"*fig_ext)
+            savefig(fig, "figures/raster-plots/raster-"*string(p)*"-"*labels[i]*"-$run_"*fig_ext)
         end
     end 
 end 
@@ -50,10 +51,11 @@ colors=[:blue, :red, :green]
 global psfig = plot([0;1], [0;1], ls=:dash, c=:black, 
                         xlabel="Input Correlation "*L"(r_{in})", 
                         ylabel="Output Correlation "*L"(r_{out})", 
-                        size=(300, 300),
-                        label=nothing, legend=:topleft)
+                        size=(400, 400),
+                        label=nothing, legend=:outerbottom)
 
-psc = Dict("HC_CTRL"=>[], "HC_LITM"=>[], "LR_CTRL"=>[], "LR_LITM"=>[], "NR_CTRL"=>[], "NR_LITM"=>[])
+#psc = Dict("HC_CTRL"=>[], "LR_CTRL"=>[], "NR_CTRL"=>[]) #, "HC_LITM"=>[], "LR_CTRL"=>[], "LR_LITM"=>[], "NR_CTRL"=>[], "NR_LITM"=>[])
+psc = Dict("HC_LITM"=>[], "LR_LITM"=>[], "NR_LITM"=>[])
 for i ∈ 1:length(labels)
     for run ∈ 1:n_runs
         spikes = load_spike_files(patterns, labels[i]*"-$run", populations)
