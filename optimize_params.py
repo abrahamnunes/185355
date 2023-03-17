@@ -47,8 +47,6 @@ free_params = {
     'ichan2': ['gnatbar', 'vshiftma', 'vshiftmb', 'vshiftha', 'vshifthb', 'vshiftnfa', 'vshiftnfb', 'vshiftnsa',
                'vshiftnsb',
                'gkfbar', 'gksbar', 'gl'],  # sodium, potassium parameters
-    'ka': ['gkabar'],  # A-type (fast inactivating) Kv channel
-    'km': ['gbar'],  # KM channel
     'lca': ['glcabar'],  # l-type calcium
     'nca': ['gncabar'],  # n-type calcium
     'sk': ['gskbar'],  # small conductance potassium channel
@@ -95,7 +93,7 @@ class optimizeparams(object):
                  population,  # str, either 'HC', 'LR', 'NR'
                  condition,  # str , either 'CTRL' or 'LITM'
                  pop_size=10,
-                 max_evaluations=100,
+                 max_evaluations=350,
                  num_selected=10,
                  mutation_rate=0.03,
                  ):
@@ -117,7 +115,7 @@ class optimizeparams(object):
         self.num_selected = num_selected
         self.mutation_rate = mutation_rate
         self.num_elites = 1
-        self.flag = str(self.population + '_' + self.condition)
+        self.flag = str(self.population + '_' + self.condition + '_' + 'wdends')
         self.n_simcells = 1  # number of simulated cells
 
         self.plot_results()  # run optimization upon class instantiation
@@ -129,9 +127,10 @@ class optimizeparams(object):
             'list'. List of baseline parameter values.
         """
         self.baseline = []
-        for key in self.free_params.keys():
-            for val in self.free_params[key]:
-                self.baseline.append(self.baseline_dict['secs']['soma']['mechs'][key][val])
+        for section in self.baseline_dict['secs'].keys():
+            for key in self.free_params.keys():
+                for val in self.free_params[key]:
+                    self.baseline.append(self.baseline_dict['secs'][section]['mechs'][key][val])
         self.num_inputs = len(self.baseline)
 
         return self.baseline
@@ -216,11 +215,22 @@ class optimizeparams(object):
         self.fitnessCandidates = []
 
         for cand in candidates:
+            # TODO: find cleaner way of doing this
             i = 0
-            for k in free_params.keys():
-                for v in free_params[k]:
-                    self.cell_dict['secs']['soma']['mechs'][k][v] = cand[i]
-                    i += 1
+            dend1 = ["gcdend1_0", "gcdend1_1", "gcdend1_2", "gcdend1_3"]
+            dend2 = ["gcdend2_0", "gcdend2_1", "gcdend2_2", "gcdend2_3"]
+            sections = ["soma"] + dend1
+            for section in sections:
+                for k in free_params.keys():
+                    for v in free_params[k]:
+                        self.cell_dict['secs'][section]['mechs'][k][v] = cand[i]
+                        i += 1
+            # dendrite 1 params == dendrite 2 params
+            for i in range(0,4):
+                for k in free_params.keys():
+                    for v in free_params[k]:
+                        self.cell_dict['secs'][dend2[i]]['mechs'][k][v] = self.cell_dict['secs'][dend1[i]]['mechs'][k][v]
+            
             FI_data = self.data_fi()
             FI_sim = self.sim_fi(noise=False).to_numpy()
             IV_data = self.data_iv()
@@ -232,9 +242,6 @@ class optimizeparams(object):
                 [((x1 - x2) ** 2) for (x1, x2) in zip((IV_data[:, 3] + IV_data[:, 5]), IV_sim[:, 2])]) / len(
                 IV_data[:, 1]
             )
-
-            #k_currs = 0
-            #ficurves = 0
 
             fitness = (0.45*na_currs + 0.45*k_currs + 0.1*ficurves)
 
@@ -269,20 +276,21 @@ class optimizeparams(object):
         # SET UP MIN/MAX BOUNDS FOR PARAMETERS ------------------
         # TODO: find cleaner way of dealing with these lists, allow for easier modification
 
-        # self.minParamValues = [0.1 * param for param in self.baseline] #0.5 best for IF, Na
-        #self.maxParamValues = [3.0 * param for param in self.baseline]  # 3.0 best for IF, Na
+        #soma min/max bounds determined from single optimization
+        soma_minbounds = [(0.0006 * 0.1), (0.3 * 0.9), (68 * 0.9), (22 * 0.9), (120 * 0.9), (20 * 0.9),
+                          (33 * 0.9), (78 * 0.9), (41 * 0.9), (100 * 0.9), (0.020 * 0.9), (0.001 * 0.9),
+                          (1.44E-05 * 1.0), (0.005 * 0.1), (0.002 * 0.1), (0.001 * 0.1), (3.70E-05 * 0.05)]
 
-        self.minParamValues = [(0.0006 * 0.1), (0.3 * 0.9), (68 * 0.9), (22 * 0.9), (120 * 0.9), (20 * 0.9),
-                               (33 * 0.9), (78 * 0.9), (41 * 0.9), (100 * 0.9), (0.020 * 0.9), (0.001 * 0.9),
-                               (1.44E-05 * 0.1), (0.012 * 0.1), (0.001 * 0.1), (0.005 * 0.1), (0.002 * 0.1),
-                               (0.001 * 0.1),
-                               (3.70E-05 * 0.1)]
+        soma_maxbounds = [(0.0006 * 2.0), (0.3 * 1.3), (68 * 1.1), (22 * 1.1), (120 * 1.1), (20 * 1.1),
+                          (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.5), (0.001 * 1.5),
+                          (1.44E-05 * 2.0), (0.005 * 2.0), (0.002 * 2.0), (0.001 * 2.0), (3.70E-05 * 1.0)]
 
-        self.maxParamValues = [(0.0006 * 2.0), (0.3 * 1.3), (68 * 1.1), (22 * 1.1), (120 * 1.1), (20 * 1.1),
-                               (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.5), (0.001 * 1.5),
-                               (1.44E-05 * 2.0), (0.012 * 2.0), (0.001 * 2.0), (0.005 * 2.0), (0.002 * 2.0),
-                               (0.001 * 2.0),
-                               (3.70E-05 * 2.0)]
+        # TODO: truncate param list so we're not initializing for both dendrites unnecessarily
+        dendrite_minbounds = [0.3 * param for param in self.baseline[len(soma_minbounds):]]
+        dendrite_maxbounds = [2.1 * param for param in self.baseline[len(soma_minbounds):]] 
+
+        self.minParamValues = soma_minbounds + dendrite_minbounds
+        self.maxParamValues = soma_maxbounds + dendrite_maxbounds
 
         # SET UP EVOLUTIONARY COMPUTATION ----------------------
         self.gc_ec = ec.EvolutionaryComputation(rand)
@@ -312,6 +320,13 @@ class optimizeparams(object):
 
         plt.savefig('figures/op-output/observer_%s.pdf' % self.flag)  # save fitness vs. iterations graph
         plt.close()
+
+        # save candidate list for debugging purposes
+        file = open('data/parameters/bestCand.txt','w')
+        for param in self.bestCand:
+            file.write(str(param)+"\n")
+        file.close()
+
         return self.bestCand
 
     def build_optimizedcell(self):
@@ -321,13 +336,27 @@ class optimizeparams(object):
         Returns
             'dict'. Results of current clamp from optimized cell.
         """
+        dend1 = ["gcdend1_0", "gcdend1_1", "gcdend1_2", "gcdend1_3"]
+        dend2 = ["gcdend2_0", "gcdend2_1", "gcdend2_2", "gcdend2_3"]
+        sections = ["soma"] + dend1
         j = 0
-        for key in self.free_params.keys():
-            for val in self.free_params[key]:
-                self.cell_dict['secs']['soma']['mechs'][key][val] = self.bestCand[j]
-                j = j + 1
+        for section in sections:
+            for key in self.free_params.keys():
+                for val in self.free_params[key]:
+                    self.cell_dict['secs'][section]['mechs'][key][val] = self.bestCand[j]
+                    j = j + 1
+        for i in range(0,4):
+            for k in free_params.keys():
+                for v in free_params[k]:
+                    self.cell_dict['secs'][dend2[i]]['mechs'][k][v] = self.cell_dict['secs'][dend1[i]]['mechs'][k][v]
+
         finalclamp = self.curr_inj(0.33)
-        # self.ep_opt = ElectrophysiologicalPhenotype(self.cell_dict)
+
+        # save dictionary used to build optimized cell, for debugging purposes
+        with open('data/parameters/build-cell-dict.txt', 'w') as f:
+            print(self.cell_dict, file=f)
+        f.close()        
+        
         return finalclamp
 
     def revert_to_baseline(self):
@@ -354,8 +383,13 @@ class optimizeparams(object):
             'tuple' of two DataFrames, (sim_fi_store, sim_iv_store)
         """
         # initialize empty DataFrames, populate with baseline parameters
+
+        # TODO: only print params for 1 dendrite. 
+        # TODO: add 1 column for section label (i.e., 'soma', 'dend1_0', etc.)
+
         baselineparams = self.retrieve_baseline_params()
-        self.param_store = pd.DataFrame({"param": sum(free_params.values(), []), "baseline": baselineparams})
+        self.param_store = pd.DataFrame({"param": sum(free_params.values(), []) * (len(self.cell_dict['secs'].keys())),
+                                         "baseline": baselineparams})
         self.sim_fi_store = pd.DataFrame([])
         self.sim_iv_store = pd.DataFrame([])
 
@@ -455,8 +489,6 @@ class optimizeparams(object):
 
 
 # TODO: test reverttobaseline, see if we can eliminate the gc init
-
-#op_hcc = optimizeparams(importgc(), free_params, rawhc, rawhciv, 'HC', 'CTRL')
 
 
 opt_results = [
