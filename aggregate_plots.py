@@ -140,3 +140,4 @@ fig1.set_figheight(10)
 fig1.tight_layout()
 fig1.savefig('figures/op-output/aggregate_plot.pdf', bbox_inches="tight")
 
+print("Finished plotting summary figure.")

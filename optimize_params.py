@@ -1,4 +1,7 @@
 # imports
+import time
+start = time.time()
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -127,7 +130,9 @@ class optimizeparams(object):
             'list'. List of baseline parameter values.
         """
         self.baseline = []
-        for section in self.baseline_dict['secs'].keys():
+        dend1 = ["gcdend1_0", "gcdend1_1", "gcdend1_2", "gcdend1_3"]
+        sections = ["soma"] + dend1
+        for section in sections:
             for key in self.free_params.keys():
                 for val in self.free_params[key]:
                     self.baseline.append(self.baseline_dict['secs'][section]['mechs'][key][val])
@@ -276,6 +281,19 @@ class optimizeparams(object):
         # SET UP MIN/MAX BOUNDS FOR PARAMETERS ------------------
         # TODO: find cleaner way of dealing with these lists, allow for easier modification
 
+        if self.population == "HC":
+            scalemax = 1.898 # optimial initial conditions for HC dendrites have a smaller upper bound than BD conditions. 
+            scalemin = 0.3
+        elif self.flag == "LR_CTRL_wdends": 
+            scalemax = 2.232 #2.1 
+            scalemin = 0.30 #0.3
+        elif self.flag == "LR_LITM_wdends": 
+            scalemax = 2.233 #2.1 
+            scalemin = 0.3165 #0.3165 w 350 iterations good. 
+        else:
+            scalemax = 2.234 
+            scalemin = 0.25  
+
         #soma min/max bounds determined from single optimization
         soma_minbounds = [(0.0006 * 0.1), (0.3 * 0.9), (68 * 0.9), (22 * 0.9), (120 * 0.9), (20 * 0.9),
                           (33 * 0.9), (78 * 0.9), (41 * 0.9), (100 * 0.9), (0.020 * 0.9), (0.001 * 0.9),
@@ -285,9 +303,8 @@ class optimizeparams(object):
                           (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.5), (0.001 * 1.5),
                           (1.44E-05 * 2.0), (0.005 * 2.0), (0.002 * 2.0), (0.001 * 2.0), (3.70E-05 * 1.0)]
 
-        # TODO: truncate param list so we're not initializing for both dendrites unnecessarily
-        dendrite_minbounds = [0.3 * param for param in self.baseline[len(soma_minbounds):]]
-        dendrite_maxbounds = [2.1 * param for param in self.baseline[len(soma_minbounds):]] 
+        dendrite_minbounds = [scalemin * param for param in self.baseline[len(soma_minbounds):]]
+        dendrite_maxbounds = [scalemax * param for param in self.baseline[len(soma_minbounds):]] #2.1 for LR and NRs
 
         self.minParamValues = soma_minbounds + dendrite_minbounds
         self.maxParamValues = soma_maxbounds + dendrite_maxbounds
@@ -384,11 +401,9 @@ class optimizeparams(object):
         """
         # initialize empty DataFrames, populate with baseline parameters
 
-        # TODO: only print params for 1 dendrite. 
-        # TODO: add 1 column for section label (i.e., 'soma', 'dend1_0', etc.)
-
+        sections = 17*['soma'] + 17*['gcdend1_0'] + 17*['gcdend1_1'] + 17*['gcdend1_2'] + 17*['gcdend1_3']
         baselineparams = self.retrieve_baseline_params()
-        self.param_store = pd.DataFrame({"param": sum(free_params.values(), []) * (len(self.cell_dict['secs'].keys())),
+        self.param_store = pd.DataFrame({"sec": sections, "param": sum(free_params.values(), []) * 5,
                                          "baseline": baselineparams})
         self.sim_fi_store = pd.DataFrame([])
         self.sim_iv_store = pd.DataFrame([])
@@ -489,12 +504,26 @@ class optimizeparams(object):
 
 
 # TODO: test reverttobaseline, see if we can eliminate the gc init
-
+'''
 
 opt_results = [
     optimizeparams(importgc(), free_params, rawnrn, rawnrniv, group, condition, )
-    for (rawnrn, rawnrniv, group) in [(rawhc, rawhciv, "HC"), (rawlr, rawlriv, "LR"), (rawnr, rawnriv, "NR")]
+    for (rawnrn, rawnrniv, group) in [(rawlr, rawlriv, "LR")]
+    for condition in ["LITM"]
+]
+
+'''
+opt_results = [
+    optimizeparams(importgc(), free_params, rawnrn, rawnrniv, group, condition, )
+    for (rawnrn, rawnrniv, group) in [(rawlr, rawlriv, "LR"), (rawnr, rawnriv, "NR")]
     for condition in ["CTRL", "LITM"]
 ]
 
+# [(rawhc, rawhciv, "HC"),
+import aggregate_plots 
+aggregate_plots
 
+end = time.time()
+time_consumed=(end-start)/60
+
+print("Optimization took %s minutes." %time_consumed)
