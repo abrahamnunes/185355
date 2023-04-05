@@ -1,0 +1,48 @@
+// IDEAL SOLUTION FOR RUNNING MAIN EXPERIMENTS. DOES NOT WORK THOUGH.
+
+N_RUNS = 3
+
+strdef hc_ctrl, hc_litm, li_ctrl, li_litm, nr_ctrl, nr_litm
+hc_ctrl = "HC_CTRL"
+hc_litm = "HC_LITM"
+li_ctrl = "LR_CTRL"
+li_litm = "LR_LITM"
+nr_ctrl = "NR_CTRL"
+nr_litm = "NR_LITM"
+strdef gcmodel
+
+strdef groupcon, hcclab
+objref hcc 
+
+load_file("objects/BC.hoc")
+load_file("objects/MC.hoc")
+load_file("objects/HIPP.hoc")
+load_file("objects/PP.hoc")
+
+proc runexperiments() { local i
+
+    for i = 1, numarg() {
+        groupcon = $si
+        print groupcon
+        //groupcon = hc_ctrl
+        sprint(gcmodel, "objects/GC_%s.hoc", groupcon)
+        load_file(gcmodel) 
+        load_file("objects/DentateGyrus.hoc")
+
+        for random_state = 1, N_RUNS {
+                random_state = 1
+                sprint(hcclab, "%s-%d", groupcon, random_state)
+
+                // TODO: understand why you cannot instantiate template within proc...
+                hcc = new DentateGyrus(hcclab, random_state, groupcon)
+
+                print "RUNNING DENTATE GYRUS ", hcclab
+                hcc.run()
+                }
+        
+    }
+ }
+
+runexperiments(hc_ctrl)
+
+

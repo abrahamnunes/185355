@@ -1,46 +1,107 @@
-N_RUNS = 3
+// Hyperparams
+N_RUNS = 10
+TREATMENT = 0     // either 0 for ctrl, or 1 for Li
+
 // Load cell templates and network
-err_ = load_file("objects/GC.hoc")
+
+strdef hc_ctrl, hc_litm, li_ctrl, li_litm, nr_ctrl, nr_litm
+hc_ctrl = "HC_CTRL"
+hc_litm = "HC_LITM"
+li_ctrl = "LR_CTRL"
+li_litm = "LR_LITM"
+nr_ctrl = "NR_CTRL"
+nr_litm = "NR_LITM"
+strdef gcmodel
+
 err_ = load_file("objects/BC.hoc")
 err_ = load_file("objects/MC.hoc")
 err_ = load_file("objects/HIPP.hoc")
 err_ = load_file("objects/PP.hoc")
-err_ = load_file("objects/DentateGyrus.hoc")
 
 // Instantiate cell objects and labels
 objref hcc, hcl, lrc, lrl, nrc, nrl
 strdef hcclab, hcllab, lrclab, lrllab, nrclab, nrllab
 
-// Do 10 Runs for each network setting
+// Do N_RUNS Runs for each network setting
+// TODO: look for cleaner solution for repeatedly loading DentateGyrus.hoc. 
+//       See "iteratortest.hoc" for potential solution that needs more work...
+
+sprint(gcmodel, "objects/GC_%s.hoc", hc_ctrl)
+err_ = load_file(gcmodel)
+err_ = load_file("objects/DentateGyrus.hoc")
+
 for random_state = 1, N_RUNS {
-    //sprint(hcclab, "%s-%d", "HC_CTRL", random_state)
+
+    sprint(hcclab, "%s-%d", "HC_CTRL", random_state)
+    hcc = new DentateGyrus(hcclab, random_state, "HC_CTRL")
+    print "RUNNING DENTATE GYRUS ", hcclab
+    hcc.run()
+
+}
+
+sprint(gcmodel, "objects/GC_%s.hoc", li_ctrl)
+err_ = load_file(gcmodel)
+err_ = load_file("objects/DentateGyrus.hoc")
+
+for random_state = 1, N_RUNS {
+
+    sprint(lrclab, "%s-%d", "LR_CTRL", random_state)
+    lrc = new DentateGyrus(lrclab, random_state, "LR_CTRL")
+    print "RUNNING DENTATE GYRUS ", lrclab
+    lrc.run()
+
+}
+
+
+sprint(gcmodel, "objects/GC_%s.hoc", nr_ctrl)
+err_ = load_file(gcmodel)
+err_ = load_file("objects/DentateGyrus.hoc")
+
+for random_state = 1, N_RUNS {
+    
+    sprint(nrclab, "%s-%d", "NR_CTRL", random_state)
+    nrc = new DentateGyrus(nrclab, random_state, "NR_CTRL")
+    print "RUNNING DENTATE GYRUS ", nrclab
+    nrc.run()
+
+}
+    
+sprint(gcmodel, "objects/GC_%s.hoc", hc_litm)
+err_ = load_file(gcmodel)
+err_ = load_file("objects/DentateGyrus.hoc")
+
+for random_state = 1, N_RUNS {
+    
     sprint(hcllab, "%s-%d", "HC_LITM", random_state)
-    //sprint(lrclab, "%s-%d", "LR_CTRL", random_state)
-    sprint(lrllab, "%s-%d", "LR_LITM", random_state)
-    //sprint(nrclab, "%s-%d", "NR_CTRL", random_state)
-    sprint(nrllab, "%s-%d", "NR_LITM", random_state)
-    //hcc = new DentateGyrus(hcclab, random_state, "HC_CTRL")
     hcl = new DentateGyrus(hcllab, random_state, "HC_LITM")
-    //lrc = new DentateGyrus(lrclab, random_state, "LR_CTRL")
-    lrl = new DentateGyrus(lrllab, random_state, "LR_LITM")
-    //nrc = new DentateGyrus(nrclab, random_state, "NR_CTRL")
-    nrl = new DentateGyrus(nrllab, random_state, "NR_LITM")
-
-    //print "RUNNING DENTATE GYRUS ", hcclab
-    //hcc.run()
-
     print "RUNNING DENTATE GYRUS ", hcllab
     hcl.run()
 
-    //print "RUNNING DENTATE GYRUS ", lrclab
-    //lrc.run()
+}
+    
+sprint(gcmodel, "objects/GC_%s.hoc", li_litm)
+err_ = load_file(gcmodel)
+err_ = load_file("objects/DentateGyrus.hoc")
 
+for random_state = 1, N_RUNS {
+    
+    sprint(lrllab, "%s-%d", "LR_LITM", random_state)
+    lrl = new DentateGyrus(lrllab, random_state, "LR_LITM")
     print "RUNNING DENTATE GYRUS ", lrllab
     lrl.run()
 
-    //print "RUNNING DENTATE GYRUS ", nrclab
-    //nrc.run()
-
+}
+    
+sprint(gcmodel, "objects/GC_%s.hoc", nr_litm)
+err_ = load_file(gcmodel)
+err_ = load_file("objects/DentateGyrus.hoc")
+    
+for random_state = 1, N_RUNS {
+    
+    sprint(nrllab, "%s-%d", "NR_LITM", random_state)
+    nrl = new DentateGyrus(nrllab, random_state, "NR_LITM")
     print "RUNNING DENTATE GYRUS ", nrllab
     nrl.run()
+
 }
+    

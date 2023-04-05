@@ -29,21 +29,23 @@ NR_CTRL_IV = extractIV(rawnriv, 'CTRL').averageIV()
 NR_LITM_IV = extractIV(rawnriv, 'LITM').averageIV()
 
 ## OPTIMIZED FI CURVES
-simfi_hcc = pd.read_csv("data/parameters/simFIs_HC_CTRL_wdends.csv") 
-simfi_hcl = pd.read_csv("data/parameters/simFIs_HC_LITM_wdends.csv") 
-simfi_lrc = pd.read_csv("data/parameters/simFIs_LR_CTRL_wdends.csv") 
-simfi_lrl = pd.read_csv("data/parameters/simFIs_LR_LITM_wdends.csv")
-simfi_nrc = pd.read_csv("data/parameters/simFIs_NR_CTRL_wdends.csv") 
-simfi_nrl = pd.read_csv("data/parameters/simFIs_NR_LITM_wdends.csv")
+simfi_hcc = pd.read_csv("data/parameters/simFIs_HC_CTRL.csv") 
+simfi_hcl = pd.read_csv("data/parameters/simFIs_HC_LITM.csv") 
+simfi_lrc = pd.read_csv("data/parameters/simFIs_LR_CTRL.csv") 
+simfi_lrl = pd.read_csv("data/parameters/simFIs_LR_LITM.csv")
+simfi_nrc = pd.read_csv("data/parameters/simFIs_NR_CTRL.csv") 
+simfi_nrl = pd.read_csv("data/parameters/simFIs_NR_LITM.csv")
+#simfi_nrl = simfi_nrc 
 
 
 ## OPTIMIZED IV CURVES 
-simiv_hcc = pd.read_csv("data/parameters/simIVs_HC_CTRL_wdends.csv") 
-simiv_hcl = pd.read_csv("data/parameters/simIVs_HC_LITM_wdends.csv") 
-simiv_lrc = pd.read_csv("data/parameters/simIVs_LR_CTRL_wdends.csv") 
-simiv_lrl = pd.read_csv("data/parameters/simIVs_LR_LITM_wdends.csv")
-simiv_nrc = pd.read_csv("data/parameters/simIVs_NR_CTRL_wdends.csv") 
-simiv_nrl = pd.read_csv("data/parameters/simIVs_NR_LITM_wdends.csv")
+simiv_hcc = pd.read_csv("data/parameters/simIVs_HC_CTRL.csv") 
+simiv_hcl = pd.read_csv("data/parameters/simIVs_HC_LITM.csv") 
+simiv_lrc = pd.read_csv("data/parameters/simIVs_LR_CTRL.csv") 
+simiv_lrl = pd.read_csv("data/parameters/simIVs_LR_LITM.csv")
+simiv_nrc = pd.read_csv("data/parameters/simIVs_NR_CTRL.csv") 
+simiv_nrl = pd.read_csv("data/parameters/simIVs_NR_LITM.csv")
+#simiv_nrl = simiv_nrc 
 
 ## PLOTTING 
 

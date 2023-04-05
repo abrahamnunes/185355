@@ -20,6 +20,7 @@ from clamps import IClamp
 from find_rheobase import ElectrophysiologicalPhenotype
 from CurvesFromData import extractFI, extractIV
 from IVdata import IVdata
+from hocfromstr import optimizedhoc
 import random
 
 netparams = specs.NetParams()
@@ -118,8 +119,10 @@ class optimizeparams(object):
         self.num_selected = num_selected
         self.mutation_rate = mutation_rate
         self.num_elites = 1
-        self.flag = str(self.population + '_' + self.condition + '_' + 'wdends')
+        self.flag = str(self.population + '_' + self.condition)
         self.n_simcells = 1  # number of simulated cells
+        self.debug = 0 # print cell dictionary and optimized params for debugging purposes
+        self.print_to_hoc = 1   # create hoc file w fitted params?
 
         self.plot_results()  # run optimization upon class instantiation
 
@@ -281,27 +284,35 @@ class optimizeparams(object):
         # SET UP MIN/MAX BOUNDS FOR PARAMETERS ------------------
         # TODO: find cleaner way of dealing with these lists, allow for easier modification
 
-        if self.population == "HC":
-            scalemax = 1.898 # optimial initial conditions for HC dendrites have a smaller upper bound than BD conditions. 
+        # optimial initial conditions for HC dendrites have a smaller upper bound than BD conditions. 
+        scalecamin = 1
+        scalecamax = 1
+        if self.flag == "HC_CTRL":
+            scalemax = 1.898 
             scalemin = 0.3
-        elif self.flag == "LR_CTRL_wdends": 
+        elif self.flag == "HC_LITM":
+            scalemax = 1.95
+            scalemin = 0.1
+        elif self.flag == "LR_CTRL": 
             scalemax = 2.232 #2.1 
             scalemin = 0.30 #0.3
-        elif self.flag == "LR_LITM_wdends": 
-            scalemax = 2.233 #2.1 
-            scalemin = 0.3165 #0.3165 w 350 iterations good. 
-        else:
-            scalemax = 2.234 
-            scalemin = 0.25  
+        elif self.flag == "LR_LITM": 
+            scalemax = 1.898 
+            scalemin = 0.185 
+        else: #NR conditions
+            scalemax = 1.866 #1.86
+            scalemin = 0.32  
+            scalecamin = 1.0
+            scalecamax = 1.083 #1.083
 
         #soma min/max bounds determined from single optimization
         soma_minbounds = [(0.0006 * 0.1), (0.3 * 0.9), (68 * 0.9), (22 * 0.9), (120 * 0.9), (20 * 0.9),
                           (33 * 0.9), (78 * 0.9), (41 * 0.9), (100 * 0.9), (0.020 * 0.9), (0.001 * 0.9),
-                          (1.44E-05 * 1.0), (0.005 * 0.1), (0.002 * 0.1), (0.001 * 0.1), (3.70E-05 * 0.05)]
+                          (1.44E-05 * 1.0), (0.005 * 0.1*scalecamin), (0.002 * 0.1*scalecamin), (0.001 * 0.1), (3.70E-05 * 0.05)]
 
         soma_maxbounds = [(0.0006 * 2.0), (0.3 * 1.3), (68 * 1.1), (22 * 1.1), (120 * 1.1), (20 * 1.1),
                           (33 * 1.1), (78 * 1.1), (41 * 1.1), (100 * 1.1), (0.020 * 1.5), (0.001 * 1.5),
-                          (1.44E-05 * 2.0), (0.005 * 2.0), (0.002 * 2.0), (0.001 * 2.0), (3.70E-05 * 1.0)]
+                          (1.44E-05 * 2.0), (0.005 * 2.0*scalecamax), (0.002 * 2.0*scalecamax), (0.001 * 2.0), (3.70E-05 * 1.0)]
 
         dendrite_minbounds = [scalemin * param for param in self.baseline[len(soma_minbounds):]]
         dendrite_maxbounds = [scalemax * param for param in self.baseline[len(soma_minbounds):]] #2.1 for LR and NRs
@@ -339,10 +350,11 @@ class optimizeparams(object):
         plt.close()
 
         # save candidate list for debugging purposes
-        file = open('data/parameters/bestCand.txt','w')
-        for param in self.bestCand:
-            file.write(str(param)+"\n")
-        file.close()
+        if self.debug:
+            file = open('data/parameters/bestCand.txt','w')
+            for param in self.bestCand:
+                file.write(str(param)+"\n")
+            file.close()
 
         return self.bestCand
 
@@ -370,9 +382,10 @@ class optimizeparams(object):
         finalclamp = self.curr_inj(0.33)
 
         # save dictionary used to build optimized cell, for debugging purposes
-        with open('data/parameters/build-cell-dict.txt', 'w') as f:
-            print(self.cell_dict, file=f)
-        f.close()        
+        if self.debug:
+            with open('data/parameters/build-cell-dict.txt', 'w') as f:
+                print(self.cell_dict, file=f)
+            f.close()        
         
         return finalclamp
 
@@ -425,6 +438,10 @@ class optimizeparams(object):
         self.sim_fi_store.to_csv('data/parameters/simFIs_%s.csv' % self.flag)
         self.sim_iv_store.to_csv('data/parameters/simIVs_%s.csv' % self.flag)
         self.param_store.to_csv('data/parameters/parameters_%s.csv' % self.flag)
+
+        #save new hoc file with optimized params 
+        if self.print_to_hoc:
+            optimizedhoc(newparams, self.flag)
 
         return self.sim_fi_store, self.sim_iv_store
 
@@ -504,22 +521,13 @@ class optimizeparams(object):
 
 
 # TODO: test reverttobaseline, see if we can eliminate the gc init
-'''
 
 opt_results = [
     optimizeparams(importgc(), free_params, rawnrn, rawnrniv, group, condition, )
-    for (rawnrn, rawnrniv, group) in [(rawlr, rawlriv, "LR")]
-    for condition in ["LITM"]
-]
-
-'''
-opt_results = [
-    optimizeparams(importgc(), free_params, rawnrn, rawnrniv, group, condition, )
-    for (rawnrn, rawnrniv, group) in [(rawlr, rawlriv, "LR"), (rawnr, rawnriv, "NR")]
+    for (rawnrn, rawnrniv, group) in [(rawhc, rawhciv, "HC"), (rawlr, rawlriv, "LR"),(rawnr, rawnriv, "NR")]
     for condition in ["CTRL", "LITM"]
 ]
 
-# [(rawhc, rawhciv, "HC"),
 import aggregate_plots 
 aggregate_plots
 
