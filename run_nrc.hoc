@@ -1,5 +1,7 @@
 // Hyperparams
 N_RUNS = 14
+TREATMENT = 0     // either 0 for ctrl, or 1 for Li
+
 // Load cell templates and network
 
 strdef hc_ctrl, hc_litm, li_ctrl, li_litm, nr_ctrl, nr_litm
@@ -20,19 +22,23 @@ err_ = load_file("objects/PP.hoc")
 objref hcc, hcl, lrc, lrl, nrc, nrl
 strdef hcclab, hcllab, lrclab, lrllab, nrclab, nrllab
 
+// Do N_RUNS Runs for each network setting
+// TODO: look for cleaner solution for repeatedly loading DentateGyrus.hoc. 
+//       See "iteratortest.hoc" for potential solution that needs more work...
+//       NOTE: below does not work either! 
 
-sprint(gcmodel, "objects/GC_%s.hoc", hc_ctrl)
-print gcmodel
+
+sprint(gcmodel, "objects/GC_%s.hoc", nr_ctrl)
 err_ = load_file(gcmodel)
 err_ = load_file("objects/DentateGyrus.hoc")
 
 
 for random_state = 1, N_RUNS {
-
-    sprint(hcclab, "%s-%d", "HC_CTRL", random_state)
-    hcc = new DentateGyrus(hcclab, random_state, "HC_CTRL")
-    print "RUNNING DENTATE GYRUS ", hcclab
-    hcc.run()
+    
+    sprint(nrclab, "%s-%d", "NR_CTRL", random_state)
+    nrc = new DentateGyrus(nrclab, random_state, "NR_CTRL")
+    print "RUNNING DENTATE GYRUS ", nrclab
+    nrc.run()
 
 }
 

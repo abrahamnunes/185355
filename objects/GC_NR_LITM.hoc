@@ -145,29 +145,29 @@
             }
 
             soma {insert bk 						
-                    gkbar_bk = 0.00005999999999999999                               // fitted to iPSC [SS]
+                    gkbar_bk = 0.00036609754167888492                               // fitted to iPSC [SS]
                 insert ichan2  						
-                    gnatbar_ichan2 = 0.36739544502094545475                          // fitted to iPSC [SS]
+                    gnatbar_ichan2 = 0.30382538214974524893                          // fitted to iPSC [SS]
                     el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
-                    vshiftma_ichan2 = 66.91977349929949525631                         // fitted to iPSC [SS]
-                    vshiftmb_ichan2 = 20.45296887517853079430                         // fitted to iPSC [SS]
-                    vshiftha_ichan2 = 122.37662221883000768230                         // fitted to iPSC [SS]
-                    vshifthb_ichan2 = 22.00000000000000000000                         // fitted to iPSC [SS]
-                    vshiftnfa_ichan2 = 33.52598707092100482896                        // fitted to iPSC [SS]
-                    vshiftnfb_ichan2 = 77.65529497594553731687                        // fitted to iPSC [SS]
-                    vshiftnsa_ichan2 = 40.80809502404931521369                        // fitted to iPSC [SS]
-                    vshiftnsb_ichan2 = 109.92515678707147230853                        // fitted to iPSC [SS]
-                    gkfbar_ichan2 = 0.02900329461536947304                           // fitted to iPSC [SS]
-                    gksbar_ichan2 = 0.00090000000000000008                           // fitted to iPSC [SS]
-                    gl_ichan2 = 0.00002880000000000000                               // fitted to iPSC [SS]
+                    vshiftma_ichan2 = 67.29851063919572595751                         // fitted to iPSC [SS]
+                    vshiftmb_ichan2 = 23.47095335846364605459                         // fitted to iPSC [SS]
+                    vshiftha_ichan2 = 118.87882140094222904736                         // fitted to iPSC [SS]
+                    vshifthb_ichan2 = 22.72663207632274762204                         // fitted to iPSC [SS]
+                    vshiftnfa_ichan2 = 33.30911097464424841519                        // fitted to iPSC [SS]
+                    vshiftnfb_ichan2 = 76.56629644409436252772                        // fitted to iPSC [SS]
+                    vshiftnsa_ichan2 = 43.38534894819657949938                        // fitted to iPSC [SS]
+                    vshiftnsb_ichan2 = 107.92862157059448691143                        // fitted to iPSC [SS]
+                    gkfbar_ichan2 = 0.02959266830902676504                           // fitted to iPSC [SS]
+                    gksbar_ichan2 = 0.00089829523855913590                           // fitted to iPSC [SS]
+                    gl_ichan2 = 0.00001482952021232379                               // fitted to iPSC [SS]
                 insert lca 						
-                    glcabar_lca = 0.00446066737579328687                             // fitted to iPSC [SS]
+                    glcabar_lca = 0.00255351892233713837                             // fitted to iPSC [SS]
                 insert nca  						
-                    gncabar_nca = 0.00220998744253659771                             // fitted to iPSC [SS]                 
+                    gncabar_nca = 0.00019822407216141575                             // fitted to iPSC [SS]                 
                 insert sk						
-                    gskbar_sk = 0.00010000000000000000                               // fitted to iPSC [SS]
+                    gskbar_sk = 0.00051118925530526131                               // fitted to iPSC [SS]
                 insert tca						
-                    gcatbar_tca = 0.00003700000000000000                             // fitted to iPSC [SS]
+                    gcatbar_tca = 0.00000193161941306084                             // fitted to iPSC [SS]
                 insert ka 						
                     gkabar_ka = 0.012 * scale_ka_conductances       // Yim et al.
                 insert km
@@ -178,116 +178,116 @@
             forsec gcldend { 
                 // all values fitted to iPSC except cm [SS]
                 insert bk 						
-                    gkbar_bk = 0.00110363180757252675                                
+                    gkbar_bk = 0.00043569687585868756                                
                 insert ichan2  						
-                    gnatbar_ichan2 = 0.00575999999999999950                          
+                    gnatbar_ichan2 = 0.00587566700903554423                          
                     el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
-                    vshiftma_ichan2 = 73.24866255136846859841                       
-                    vshiftmb_ichan2 = 9.91247984996494224674           
-                    vshiftha_ichan2 = 100.64764282719578147862            
-                    vshifthb_ichan2 = 21.79128699175665673238           
-                    vshiftnfa_ichan2 = 10.11238435598996687759                 
-                    vshiftnfb_ichan2 = 19.30483910233623134900                      
-                    vshiftnsa_ichan2 = 36.86820397674212301808                     
-                    vshiftnsb_ichan2 = 54.51763116863522640188             
-                    gkfbar_ichan2 = 0.00746400000000000015
-                    gksbar_ichan2 = 0.01119600000000000109
-                    gl_ichan2 = 0.00002687040000000000
+                    vshiftma_ichan2 = 72.00908352837669212931                       
+                    vshiftmb_ichan2 = 10.05866287297631878062           
+                    vshiftha_ichan2 = 105.82526035660306718000            
+                    vshifthb_ichan2 = 16.07700513630057770342           
+                    vshiftnfa_ichan2 = 26.69303619146630168757                 
+                    vshiftnfb_ichan2 = 20.32044322166495575743                      
+                    vshiftnsa_ichan2 = 36.39794892716360408258                     
+                    vshiftnsb_ichan2 = 55.50669569855109841683             
+                    gkfbar_ichan2 = 0.00604530884973730146
+                    gksbar_ichan2 = 0.00722289049440019357
+                    gl_ichan2 = 0.00002443855292375595
                 insert lca 						
-                    glcabar_lca = 0.00859402544198309415
+                    glcabar_lca = 0.00238773027021453111
                 insert nca  						
-                    gncabar_nca = 0.00114281061665529753
+                    gncabar_nca = 0.00107884546982767800
                 insert sk						
-                    gskbar_sk = 0.00014450929781910772
+                    gskbar_sk = 0.00012346487525245479
                 insert tca						
-                    gcatbar_tca = 0.00002400000000000000
+                    gcatbar_tca = 0.00002366405892739300
                 cm=cm_fit_
             }
                 
             forsec pdend {
                 // all values fitted to iPSC except cm [SS]
                 insert bk 						
-                    gkbar_bk = 0.00034363082639319768
+                    gkbar_bk = 0.00190061289795323031
                 insert ichan2  						
-                    gnatbar_ichan2 = 0.00444221008989645252
+                    gnatbar_ichan2 = 0.02417375891213749753
                     el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
-                    vshiftma_ichan2 = 35.26297612097529565744                       
-                    vshiftmb_ichan2 = 8.52640249749249079514           
-                    vshiftha_ichan2 = 119.33211822354402897872            
-                    vshifthb_ichan2 = 4.70327612684196338932           
-                    vshiftnfa_ichan2 = 32.71415270466465585741                 
-                    vshiftnfb_ichan2 = 77.64743744776886558157                      
-                    vshiftnsa_ichan2 = 50.29916870933463002302                     
-                    vshiftnsb_ichan2 = 60.25126657138905983402             
-                    gkfbar_ichan2 = 0.00329106377922986065
-                    gksbar_ichan2 = 0.00192000000000000005
-                    gl_ichan2 = 0.00004232088000000000
+                    vshiftma_ichan2 = 35.73928645034203555042                       
+                    vshiftmb_ichan2 = 8.64376377434796161481           
+                    vshiftha_ichan2 = 116.92605508197789276892            
+                    vshifthb_ichan2 = 5.98516212833397798221           
+                    vshiftnfa_ichan2 = 33.04698698782424060028                 
+                    vshiftnfb_ichan2 = 44.25661422225875440972                      
+                    vshiftnsa_ichan2 = 50.93545152479049420435                     
+                    vshiftnsb_ichan2 = 61.79259722382041530864             
+                    gkfbar_ichan2 = 0.00331335014246558453
+                    gksbar_ichan2 = 0.00821248429069832732
+                    gl_ichan2 = 0.00004203000622739663
                 insert lca 						
-                    glcabar_lca = 0.00266416396487809386
+                    glcabar_lca = 0.00268616527884109162
                 insert nca  						
-                    gncabar_nca = 0.00032000000000000003
+                    gncabar_nca = 0.00099715092192572351
                 insert sk						
-                    gskbar_sk = 0.00009538386783049330
+                    gskbar_sk = 0.00009965352319819307
                 insert tca						
-                    gcatbar_tca = 0.00018045903740492958
+                    gcatbar_tca = 0.00045442618393490557
                 cm=cm_fit_*1.6
             }
                 
             forsec mdend {
                 // all values fitted to iPSC except cm [SS]
                 insert bk 						
-                    gkbar_bk = 0.00158736492829206384
+                    gkbar_bk = 0.00155438620883594880
                 insert ichan2  						
-                    gnatbar_ichan2 = 0.01056117730292326952
+                    gnatbar_ichan2 = 0.01092949038241916061
                     el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
-                    vshiftma_ichan2 = 53.55467902008600589170                       
-                    vshiftmb_ichan2 = 23.94790455194860712140           
-                    vshiftha_ichan2 = 71.02981816623460531446            
-                    vshifthb_ichan2 = 4.76099351441168039401           
-                    vshiftnfa_ichan2 = 21.33114848295907961528                 
-                    vshiftnfb_ichan2 = 79.45589621677441982683                      
-                    vshiftnsa_ichan2 = 19.34819819809576202374                     
-                    vshiftnsb_ichan2 = 84.88387272752707701784             
-                    gkfbar_ichan2 = 0.00032000000000000003
-                    gksbar_ichan2 = 0.01086056635245297858
-                    gl_ichan2 = 0.00004232088000000000
+                    vshiftma_ichan2 = 53.42393602450565737172                       
+                    vshiftmb_ichan2 = 26.31602077683473694947           
+                    vshiftha_ichan2 = 71.56344028728052819588            
+                    vshifthb_ichan2 = 5.10487127392129202974           
+                    vshiftnfa_ichan2 = 23.30935492611515869044                 
+                    vshiftnfb_ichan2 = 81.83265112336158608741                      
+                    vshiftnsa_ichan2 = 19.76201462459690461060                     
+                    vshiftnsb_ichan2 = 83.33946866528904706684             
+                    gkfbar_ichan2 = 0.00117364421069368272
+                    gksbar_ichan2 = 0.00588083391646980393
+                    gl_ichan2 = 0.00001327627437971709
                 insert lca 						
-                    glcabar_lca = 0.00029096522051334252
+                    glcabar_lca = 0.00016453535694872594
                 insert nca  						
-                    gncabar_nca = 0.00186600000000000004
+                    gncabar_nca = 0.00140331052932918601
                 insert sk						
                     gskbar_sk = 0.00000000000000000000
                 insert tca						
-                    gcatbar_tca = 0.00045752858583686655
+                    gcatbar_tca = 0.00045539566021616032
                 cm=cm_fit_*1.6
             }
 
             forsec ddend {
                 // all values fitted to iPSC except cm [SS]
                 insert bk 						
-                    gkbar_bk = 0.00426671062788035963
+                    gkbar_bk = 0.00416445454329038029
                 insert ichan2  						
                     gnatbar_ichan2 = 0.00000000000000000000
                     el_ichan2 = e_pas_fit_				            // set leak reversal poti to gain Vrest of cell <ah>
-                    vshiftma_ichan2 = 40.76898035050508184440                       
-                    vshiftmb_ichan2 = 10.61343939802173963471           
-                    vshiftha_ichan2 = 81.26130515334487824930            
-                    vshifthb_ichan2 = 5.35911692806057438077           
-                    vshiftnfa_ichan2 = 10.62487661331470434334                 
-                    vshiftnfb_ichan2 = 19.73134388356067603354                      
-                    vshiftnsa_ichan2 = 28.61141225059738246728                     
-                    vshiftnsb_ichan2 = 17.60000000000000142109             
-                    gkfbar_ichan2 = 0.00182630415085213629
-                    gksbar_ichan2 = 0.00256000000000000021
-                    gl_ichan2 = 0.00000725760000000000
+                    vshiftma_ichan2 = 62.09792868319234315777                       
+                    vshiftmb_ichan2 = 23.33265723737859431708           
+                    vshiftha_ichan2 = 82.64902797714709947741            
+                    vshifthb_ichan2 = 11.90267377608926580024           
+                    vshiftnfa_ichan2 = 10.17372302817697971022                 
+                    vshiftnfb_ichan2 = 20.52908377932466521543                      
+                    vshiftnsa_ichan2 = 27.76758550795040747516                     
+                    vshiftnsb_ichan2 = 65.82531822034421509215             
+                    gkfbar_ichan2 = 0.00036926305629303115
+                    gksbar_ichan2 = 0.00620601662772069223
+                    gl_ichan2 = 0.00004338333500614437
                 insert lca 						
                     glcabar_lca = 0.00000000000000000000
                 insert nca  						
-                    gncabar_nca = 0.00186600000000000004
+                    gncabar_nca = 0.00033063009592414682
                 insert sk						
                     gskbar_sk = 0.00000000000000000000
                 insert tca						
-                    gcatbar_tca = 0.00186600000000000004
+                    gcatbar_tca = 0.00185425322596450442
                 cm=cm_fit_*1.6
             }
                 

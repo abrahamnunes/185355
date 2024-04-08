@@ -39,6 +39,42 @@ class extractFI(object):
         if self.condition == 'LITM':
             return self.LITM_APs
 
+class extractnegIV(object):
+    """ object for extracting average negative IV curves from DataFrame objects
+    Arguments
+        celldata: 'DataFrame' of raw IV curves
+        condition: 'str'. Experimental condition. Can either be 'CTRL' or 'LITM'
+
+    Returns
+        'DataFrame'. Average and SEM statistics for specified condition
+    """
+    def __init__(self, celldata, condition):
+        self.IV_curve = celldata
+        self.condition = condition
+        self.CTRL_Vs = []
+        self.LITM_Vs = []
+
+    def averageIV(self):
+        """ Computes average FIs and SEM, returns DataFrame"""
+        aggregate = self.IV_curve.groupby(['Condition', 'Current']).agg({'Voltage': ['mean']})
+        stdv = self.IV_curve.groupby(['Condition', 'Current']).agg({'Voltage': ['std']})
+        counts = self.IV_curve.groupby(['Condition']).agg({'Cell': ['nunique']})  # computes number of cells/condition
+
+        ## separate out CTRL and LITM conditions
+        self.CTRL_Vs = aggregate.Voltage['mean']['CTRL'].values
+        self.CTRL_SEM = stdv.Voltage['std']['CTRL'].values / np.sqrt(counts.Cell['nunique']['CTRL'])
+        self.LITM_Vs = aggregate.Voltage['mean']['LITM'].values
+        self.LITM_SEM = stdv.Voltage['std']['LITM'].values / np.sqrt(counts.Cell['nunique']['LITM'])
+
+        ## add current vals as column
+        self.CTRL_Vs = np.c_[np.linspace(-0.033, 0, 12), self.CTRL_Vs, self.CTRL_SEM]
+        self.LITM_Vs = np.c_[np.linspace(-0.033, 0, 12), self.LITM_Vs, self.LITM_SEM]
+
+        if self.condition == 'CTRL':
+            return self.CTRL_Vs
+        if self.condition == 'LITM':
+            return self.LITM_Vs
+
 
 class extractIV(object):
     """ object for extracting average IV curves from DataFrame objects

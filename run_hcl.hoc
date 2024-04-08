@@ -1,5 +1,6 @@
-// Hyperparams
 N_RUNS = 14
+TREATMENT = 0     // either 0 for ctrl, or 1 for Li
+
 // Load cell templates and network
 
 strdef hc_ctrl, hc_litm, li_ctrl, li_litm, nr_ctrl, nr_litm
@@ -20,19 +21,15 @@ err_ = load_file("objects/PP.hoc")
 objref hcc, hcl, lrc, lrl, nrc, nrl
 strdef hcclab, hcllab, lrclab, lrllab, nrclab, nrllab
 
-
-sprint(gcmodel, "objects/GC_%s.hoc", hc_ctrl)
-print gcmodel
+sprint(gcmodel, "objects/GC_%s.hoc", hc_litm)
 err_ = load_file(gcmodel)
 err_ = load_file("objects/DentateGyrus.hoc")
 
-
 for random_state = 1, N_RUNS {
-
-    sprint(hcclab, "%s-%d", "HC_CTRL", random_state)
-    hcc = new DentateGyrus(hcclab, random_state, "HC_CTRL")
-    print "RUNNING DENTATE GYRUS ", hcclab
-    hcc.run()
+    
+    sprint(hcllab, "%s-%d", "HC_LITM", random_state)
+    hcl = new DentateGyrus(hcllab, random_state, "HC_LITM")
+    print "RUNNING DENTATE GYRUS ", hcllab
+    hcl.run()
 
 }
-

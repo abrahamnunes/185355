@@ -134,7 +134,7 @@ begintemplate DentateGyrus
         Arguments: 
             $1 : int :  Global RNG seed
         */
-        n_patterns = 12      // number of patterns to simulate (should be 12 for the full sim)
+        n_patterns = 24      // number of patterns to simulate (should be 12 for the full sim)
         dt = 0.1            // simulation time step [ms]
         tstop = 200         // total simulation time [ms]
         trial = $1          // trialnumber = seed of simulation [ GENERALIZE ]
@@ -281,14 +281,14 @@ begintemplate DentateGyrus
         //scale_sk_conductances           = 1      // scaling of Ca-dependent K (SK) of th GC model
         //scale_kir_                      = 1      // scaling of KIR conductance in GC model
         //scale_gabaa_                    = 1      // scaling of GABAA in GC model
-        scale_PP_strength               = 0.005*(1-test_sa)   // scaling of synaptic weight of PP
-        scale_PP2BC_strength            = 2*(1-test_sa)     // scaling of synaptic weight PP->BC (100% for original value which was 50% of PP->GC strength..)
+        scale_PP_strength               = 0.01*(1-test_sa)   // scaling of synaptic weight of PP, 0.1 Yim et al.
+        scale_PP2BC_strength            = 1*(1-test_sa)     // scaling of synaptic weight PP->BC (100% for original value which was 50% of PP->GC strength..)
         scale_PP2HC_strength            = 0                 // scaling of synaptic weight PP->HIPP (set to 0% because there are no PP->HIPP connections...)
         scale_HC2GC_strength            = 1*(1-test_sa)     // scaling of synaptic weight HC->GC (beta_HIPP in Myers and Scharfman, 2009)
         scale_MC2GC_strength            = 1*(1-test_sa)     // scaling of synaptic weight MC->GC (beta_HIPP in Myers and Scharfman, 2009)
-        scale_GC2BC_strength            = 3*(1-test_sa)     // scaling of synaptic weight GC->BC
-        scale_BC2GC_strength            = 5*(1-test_sa)     // scaling of synaptic weight BC->GC
-        spontaneous_activity_strength   = 0               // scaling of the strength of synaptic weight for the spontaneous AP generators
+        scale_GC2BC_strength            = 10*(1-test_sa)     // scaling of synaptic weight GC->BC
+        scale_BC2GC_strength            = 10*(1-test_sa)     // scaling of synaptic weight BC->GC
+        spontaneous_activity_strength   = 100               // scaling of the strength of synaptic weight for the spontaneous AP generators
     }
 
 
@@ -336,7 +336,8 @@ begintemplate DentateGyrus
             scale_size_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
-            spontaneous_activity_rate = 0.20 // In Hz
+            //spontaneous_activity_rate = 0.20 // In Hz
+            spontaneous_activity_rate = 0.25
         }
 
 
@@ -349,7 +350,8 @@ begintemplate DentateGyrus
             scale_size_ = 1
             scale_gabaa_ = 1
             scale_kir_ = 0
-            spontaneous_activity_rate = 1  // In Hz
+            //spontaneous_activity_rate = 1  // In Hz
+            spontaneous_activity_rate = 0.25
         }
 
         // Lithium Responders, lithium condition
@@ -1438,7 +1440,7 @@ begintemplate DentateGyrus
         print "Running simulation."
         // Write connections to file 
         save_network_connections()
-        for (PP_box_startid_ = 0; PP_box_startid_ <= 12; PP_box_startid_ += 1 ) { 
+        for (PP_box_startid_ = 0; PP_box_startid_ <= n_patterns; PP_box_startid_ += 1 ) { 
             initialize_simulation_run(100)
 
             // File header voltage output file
